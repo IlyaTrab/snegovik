@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a237e">
+  <title>⛄ Снеговик — AR квест</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Camera video background -->
+  <video id="camera" autoplay playsinline muted></video>
+
+  <!-- Three.js canvas -->
+  <canvas id="ar-canvas"></canvas>
+
+  <!-- UI Overlay -->
+  <div id="ui">
+
+    <!-- Start screen -->
+    <div id="screen-start" class="screen active">
+      <div class="card start-card">
+        <div class="big-emoji bounce">⛄</div>
+        <h1>Привет!<br>Я Снеговик!</h1>
+        <p>Готов к зимним<br>приключениям?</p>
+        <button id="btn-start" class="btn-primary">Начать игру!</button>
+      </div>
+    </div>
+
+    <!-- Camera permission screen -->
+    <div id="screen-camera" class="screen">
+      <div class="card">
+        <div class="big-emoji">📸</div>
+        <h2>Нужна камера</h2>
+        <p>Разреши доступ к камере,<br>чтобы я появился рядом с тобой!</p>
+        <button id="btn-allow-camera" class="btn-primary">Открыть камеру</button>
+      </div>
+    </div>
+
+    <!-- AR HUD (active during AR) -->
+    <div id="screen-ar" class="screen">
+      <div id="score-bar">
+        <span class="score-icon">⭐</span>
+        <span id="score-value">0</span>
+        <span class="score-label">очков</span>
+      </div>
+
+      <div id="quest-panel" class="hidden">
+        <div id="quest-title-text"></div>
+        <div id="quest-desc-text"></div>
+      </div>
+
+      <div id="hint-bar">
+        <span id="hint-text">Нажми на снеговика!</span>
+      </div>
+
+      <div id="speech-bubble" class="hidden">
+        <span id="speech-text"></span>
+      </div>
+
+      <div id="action-buttons">
+        <button class="action-btn" data-action="dance">💃<br>Танцуй!</button>
+        <button class="action-btn" data-action="sing">🎵<br>Пой!</button>
+        <button class="action-btn" data-action="wave">👋<br>Помаши!</button>
+      </div>
+    </div>
+
+    <!-- Quest complete overlay -->
+    <div id="screen-quest-complete" class="screen overlay">
+      <div class="card reward-card">
+        <div class="reward-stars">⭐⭐⭐</div>
+        <h2 id="quest-complete-title">Квест выполнен!</h2>
+        <div id="points-earned" class="points-big">+50</div>
+        <button id="btn-next-quest" class="btn-primary">Дальше!</button>
+      </div>
+    </div>
+
+    <!-- Final reward screen -->
+    <div id="screen-reward" class="screen">
+      <div class="card final-card">
+        <div class="big-emoji trophy-anim">🏆</div>
+        <h1>Молодец!</h1>
+        <p>Ты выполнил все задания!</p>
+        <div id="final-score" class="score-big">0 очков</div>
+        <div id="achievement-stars">⭐⭐⭐⭐⭐</div>
+        <button id="btn-restart" class="btn-primary">Играть снова!</button>
+      </div>
+    </div>
+
+    <!-- Error screen -->
+    <div id="screen-error" class="screen">
+      <div class="card">
+        <div class="big-emoji">😢</div>
+        <h2 id="error-title">Упс!</h2>
+        <p id="error-msg">Что-то пошло не так</p>
+        <button id="btn-retry" class="btn-primary">Попробовать снова</button>
+        <button id="btn-fallback-from-error" class="btn-secondary" style="margin-top:12px">Играть без камеры</button>
+      </div>
+    </div>
+
+    <!-- Fallback screen (no AR) -->
+    <div id="screen-fallback" class="screen">
+      <div class="card">
+        <div class="big-emoji bounce">⛄</div>
+        <h2>Снеговик здесь!</h2>
+        <p>AR недоступен, но снеговик<br>всё равно пришёл!</p>
+        <button id="btn-fallback-play" class="btn-primary">Играть!</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Loading indicator -->
+  <div id="loading">
+    <div class="loading-snowflake">❄️</div>
+    <p>Загружаю снеговика...</p>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

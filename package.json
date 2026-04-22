@@ -1,0 +1,13 @@
+{
+  "name": "snegovik-ar",
+  "version": "1.0.0",
+  "description": "Интерактивный AR снеговик для детей — WebAR MVP",
+  "private": true,
+  "scripts": {
+    "dev": "python3 -m http.server 8080",
+    "start": "python3 -m http.server 8080",
+    "serve": "npx serve . -p 8080"
+  },
+  "keywords": ["ar", "snowman", "kids", "three.js", "webxr"],
+  "license": "MIT"
+}

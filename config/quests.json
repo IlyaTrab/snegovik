@@ -1,0 +1,67 @@
+{
+  "version": "1.0",
+  "quests": [
+    {
+      "id": "tap_snowman",
+      "title": "🖐 Потрогай снеговика",
+      "desc": "Нажми прямо на снеговика!",
+      "trigger": "tap_body",
+      "animation": "surprised",
+      "speechKey": "tap",
+      "points": 30,
+      "hint": "Просто нажми на снеговика на экране"
+    },
+    {
+      "id": "tap_nose",
+      "title": "🥕 Потрогай нос",
+      "desc": "Нажми на оранжевый морковный нос!",
+      "trigger": "tap_nose",
+      "animation": "tapNose",
+      "speechKey": "nose",
+      "points": 50,
+      "hint": "Найди оранжевый нос снеговика и нажми на него"
+    },
+    {
+      "id": "dance_quest",
+      "title": "💃 Потанцуем!",
+      "desc": "Нажми кнопку «Танцуй!» внизу",
+      "trigger": "action_dance",
+      "animation": "dance",
+      "speechKey": "dance",
+      "points": 40,
+      "hint": "Нажми большую кнопку «Танцуй!»"
+    },
+    {
+      "id": "wave_quest",
+      "title": "👋 Помаши снеговику!",
+      "desc": "Нажми «Помаши!»",
+      "trigger": "action_wave",
+      "animation": "wave",
+      "speechKey": "wave",
+      "points": 35,
+      "hint": "Нажми кнопку «Помаши!» внизу экрана"
+    },
+    {
+      "id": "sing_quest",
+      "title": "🎵 Запой песенку!",
+      "desc": "Нажми «Пой!» — снеговик запоёт!",
+      "trigger": "action_sing",
+      "animation": "sing",
+      "speechKey": "sing",
+      "points": 45,
+      "hint": "Нажми кнопку «Пой!»"
+    }
+  ],
+  "bonusQuests": [
+    {
+      "id": "hat_tap",
+      "title": "🎩 Потрогай шляпу",
+      "desc": "Нажми на чёрную шляпу снеговика!",
+      "trigger": "tap_hat",
+      "animation": "happy",
+      "speechKey": "tap",
+      "points": 60,
+      "hint": "Найди и нажми на шляпу"
+    }
+  ]
+}
