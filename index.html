@@ -6,42 +6,40 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#1a237e">
-  <title>⛄ Снеговик — AR квест</title>
+  <meta name="theme-color" content="#050D2A">
+  <title>⛄ Снеговик AR</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
 
-  <!-- Camera video background -->
   <video id="camera" autoplay playsinline muted></video>
-
-  <!-- Three.js canvas -->
   <canvas id="ar-canvas"></canvas>
 
-  <!-- UI Overlay -->
   <div id="ui">
 
-    <!-- Start screen -->
+    <!-- Start -->
     <div id="screen-start" class="screen active">
-      <div class="card start-card">
-        <div class="big-emoji bounce">⛄</div>
+      <div class="card">
+        <span class="big-emoji bounce">⛄</span>
         <h1>Привет!<br>Я Снеговик!</h1>
         <p>Готов к зимним<br>приключениям?</p>
         <button id="btn-start" class="btn-primary">Начать игру!</button>
       </div>
     </div>
 
-    <!-- Camera permission screen -->
+    <!-- Camera permission -->
     <div id="screen-camera" class="screen">
       <div class="card">
-        <div class="big-emoji">📸</div>
+        <span class="big-emoji">📸</span>
         <h2>Нужна камера</h2>
         <p>Разреши доступ к камере,<br>чтобы я появился рядом с тобой!</p>
         <button id="btn-allow-camera" class="btn-primary">Открыть камеру</button>
       </div>
     </div>
 
-    <!-- AR HUD (active during AR) -->
+    <!-- AR HUD -->
     <div id="screen-ar" class="screen">
       <div id="score-bar">
         <span class="score-icon">⭐</span>
@@ -54,12 +52,12 @@
         <div id="quest-desc-text"></div>
       </div>
 
-      <div id="hint-bar">
-        <span id="hint-text">Нажми на снеговика!</span>
-      </div>
-
       <div id="speech-bubble" class="hidden">
         <span id="speech-text"></span>
+      </div>
+
+      <div id="hint-bar">
+        <span id="hint-text">Нажми на снеговика!</span>
       </div>
 
       <div id="action-buttons">
@@ -71,41 +69,41 @@
 
     <!-- Quest complete overlay -->
     <div id="screen-quest-complete" class="screen overlay">
-      <div class="card reward-card">
-        <div class="reward-stars">⭐⭐⭐</div>
+      <div class="card">
+        <span class="reward-stars">⭐⭐⭐</span>
         <h2 id="quest-complete-title">Квест выполнен!</h2>
         <div id="points-earned" class="points-big">+50</div>
         <button id="btn-next-quest" class="btn-primary">Дальше!</button>
       </div>
     </div>
 
-    <!-- Final reward screen -->
+    <!-- Final reward -->
     <div id="screen-reward" class="screen">
-      <div class="card final-card">
-        <div class="big-emoji trophy-anim">🏆</div>
+      <div class="card">
+        <span class="big-emoji trophy-anim">🏆</span>
         <h1>Молодец!</h1>
         <p>Ты выполнил все задания!</p>
         <div id="final-score" class="score-big">0 очков</div>
-        <div id="achievement-stars">⭐⭐⭐⭐⭐</div>
+        <span id="achievement-stars">⭐⭐⭐⭐⭐</span>
         <button id="btn-restart" class="btn-primary">Играть снова!</button>
       </div>
     </div>
 
-    <!-- Error screen -->
+    <!-- Error -->
     <div id="screen-error" class="screen">
       <div class="card">
-        <div class="big-emoji">😢</div>
+        <span class="big-emoji">😢</span>
         <h2 id="error-title">Упс!</h2>
         <p id="error-msg">Что-то пошло не так</p>
         <button id="btn-retry" class="btn-primary">Попробовать снова</button>
-        <button id="btn-fallback-from-error" class="btn-secondary" style="margin-top:12px">Играть без камеры</button>
+        <button id="btn-fallback-from-error" class="btn-secondary" style="margin-top:14px">Играть без камеры</button>
       </div>
     </div>
 
-    <!-- Fallback screen (no AR) -->
+    <!-- Fallback (no camera) -->
     <div id="screen-fallback" class="screen">
       <div class="card">
-        <div class="big-emoji bounce">⛄</div>
+        <span class="big-emoji bounce">⛄</span>
         <h2>Снеговик здесь!</h2>
         <p>AR недоступен, но снеговик<br>всё равно пришёл!</p>
         <button id="btn-fallback-play" class="btn-primary">Играть!</button>
@@ -114,7 +112,7 @@
 
   </div>
 
-  <!-- Loading indicator -->
+  <!-- Loading -->
   <div id="loading">
     <div class="loading-snowflake">❄️</div>
     <p>Загружаю снеговика...</p>
