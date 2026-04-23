@@ -151,6 +151,7 @@ p {
   position: absolute;
   top:   calc(env(safe-area-inset-top,  0px) + 16px);
   right: 16px;
+  max-width: min(38vw, 180px);
   background: var(--glass);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -174,7 +175,7 @@ p {
   position: absolute;
   top:   calc(env(safe-area-inset-top, 0px) + 16px);
   left:  16px;
-  right: 110px;
+  width: min(54vw, 270px);
   background: var(--glass);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -193,7 +194,7 @@ p {
 /* ── Hint bar ────────────────────────────────────────────── */
 #hint-bar {
   position: absolute;
-  bottom: 178px; left: 50%;
+  bottom: 214px; left: 50%;
   transform: translateX(-50%);
   background: var(--glass);
   backdrop-filter: blur(16px);
@@ -213,7 +214,7 @@ p {
 /* ── Speech bubble ───────────────────────────────────────── */
 #speech-bubble {
   position: absolute;
-  bottom: 228px; left: 50%;
+  bottom: 274px; left: 50%;
   transform: translateX(-50%);
   background: #fff;
   color: #1A237E;
@@ -240,9 +241,13 @@ p {
 #action-buttons {
   position: absolute;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
-  left: 0; right: 0;
-  display: flex; justify-content: center;
-  gap: 14px; padding: 0 20px;
+  left: 16px;
+  right: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 auto;
+  max-width: min(460px, calc(100vw - 32px));
   pointer-events: all;
 }
 .action-btn {
@@ -251,8 +256,8 @@ p {
   -webkit-backdrop-filter: blur(16px);
   border: 1.5px solid rgba(255,255,255,0.20);
   color: #fff; border-radius: 20px;
-  padding: 14px 10px; font-size: 15px; font-weight: 900;
-  cursor: pointer; flex: 1; max-width: 105px;
+  padding: 13px 10px; font-size: 15px; font-weight: 900;
+  cursor: pointer; width: 100%; min-height: 86px;
   line-height: 1.55;
   box-shadow: 0 4px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
   transition: transform 0.12s, background 0.15s, box-shadow 0.15s;
@@ -260,6 +265,7 @@ p {
 .action-btn:nth-child(1) { border-color: rgba(255,105,180,0.4); }
 .action-btn:nth-child(2) { border-color: rgba(77,208,225,0.4);  }
 .action-btn:nth-child(3) { border-color: rgba(105,240,174,0.4); }
+.action-btn:nth-child(4) { border-color: rgba(255,255,255,0.34); }
 .action-btn:active {
   transform: scale(0.88);
   background: rgba(66,165,245,0.22);
@@ -356,10 +362,11 @@ p {
 /* ── Particles ───────────────────────────────────────────── */
 .snowflake-particle {
   position: fixed; pointer-events: none;
+  opacity: 0.55;
   animation: fallDown linear forwards; z-index: 5;
 }
 @keyframes fallDown {
-  from { transform: translateY(-30px) rotate(0deg);   opacity: 0.85; }
+  from { transform: translateY(-30px) rotate(0deg);   opacity: 0.55; }
   to   { transform: translateY(110vh)  rotate(600deg); opacity: 0;    }
 }
 
@@ -376,8 +383,9 @@ p {
 /* ── Combo badge ─────────────────────────────────────────── */
 #combo-badge {
   position: absolute;
-  top:  calc(env(safe-area-inset-top, 0px) + 72px);
+  top:  calc(env(safe-area-inset-top, 0px) + 82px);
   right: 16px;
+  max-width: min(38vw, 170px);
   background: linear-gradient(135deg, #FF6F00, #E65100);
   border-radius: 30px;
   padding: 8px 18px;
@@ -398,9 +406,9 @@ p {
 
 #anim-status {
   position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 116px);
-  right: 16px;
-  max-width: min(46vw, 260px);
+  top: calc(env(safe-area-inset-top, 0px) + 106px);
+  left: 16px;
+  max-width: min(54vw, 270px);
   background: rgba(7,16,48,0.78);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -439,13 +447,57 @@ p {
 /* ── Walk tip ────────────────────────────────────────────── */
 #walk-tip {
   position: absolute;
-  bottom: 178px; left: 50%;
+  bottom: 186px; left: 50%;
   transform: translateX(-50%);
   font-size: 12px; font-weight: 700;
-  color: rgba(255,255,255,0.45);
+  color: rgba(255,255,255,0.38);
   pointer-events: none;
   white-space: nowrap;
   letter-spacing: 0.2px;
+}
+
+@media (min-width: 700px) {
+  #action-buttons {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    max-width: 620px;
+  }
+}
+
+@media (max-width: 430px) {
+  #quest-panel {
+    width: min(52vw, 232px);
+    padding: 12px 14px;
+  }
+
+  #score-bar {
+    padding: 10px 16px;
+  }
+
+  #anim-status {
+    top: calc(env(safe-area-inset-top, 0px) + 118px);
+    max-width: min(52vw, 220px);
+  }
+
+  #hint-bar {
+    bottom: 220px;
+    max-width: calc(100vw - 34px);
+    padding: 11px 18px;
+    font-size: 14px;
+    white-space: normal;
+    text-align: center;
+  }
+
+  #speech-bubble {
+    bottom: 286px;
+    max-width: calc(100vw - 56px);
+  }
+
+  #walk-tip {
+    bottom: 196px;
+    max-width: calc(100vw - 32px);
+    white-space: normal;
+    text-align: center;
+  }
 }
 
 /* ── Utility ─────────────────────────────────────────────── */

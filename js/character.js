@@ -8,23 +8,25 @@ import { Snowman } from './snowman.js';
 
 export const MODEL_URL = new URL('../assets/models/snowman.glb', import.meta.url).href;
 
-const TARGET_HEIGHT = 0.78;
-const GENERIC_KEYS = ['idle', 'walk', 'run', 'dance', 'wave', 'sing', 'happy', 'surprised'];
+const TARGET_HEIGHT = 0.68;
+const GENERIC_KEYS = ['idle', 'walk', 'run', 'dance', 'wave', 'sing', 'throw', 'happy', 'surprised'];
 const ACTION_META = {
   dance: { label: 'Танцуй!', emoji: '💃' },
   sing:  { label: 'Пой!', emoji: '🎵' },
   wave:  { label: 'Помаши!', emoji: '👋' },
+  throw: { label: 'Снежок!', emoji: '☄️' },
 };
 
 const ANIM_MAP = {
   idle:      ['Idle', 'idle', 'Standing', 'IDLE', 'Armature|Idle'],
   walk:      ['Walk', 'Walking', 'walk', 'WALK'],
   run:       ['Run', 'Running', 'run', 'RUN', 'WalkJump'],
-  dance:     ['Dance', 'dance', 'DANCE', 'Dive'],
+  dance:     ['Dance', 'dance', 'DANCE', 'Dive', 'Basic Sing Energetic', 'Basic Sing'],
   wave:      ['Wave', 'wave', 'WAVE', 'Hello'],
   happy:     ['Jump', 'Yes', 'ThumbsUp', 'Happy', 'happy'],
   surprised: ['No', 'Punch', 'Surprised', 'surprised', 'React'],
-  sing:      ['Sing', 'sing', 'Song', 'Vocal'],
+  sing:      ['Sing', 'sing', 'Song', 'Vocal', 'Routine Claw Hair', 'Routine'],
+  throw:     ['Throw', 'Snowball', 'Snow Ball', 'Standing 1H Magic Attack 02', 'Standing 1H', '1H Magic Attack'],
   thumbsup:  ['ThumbsUp', 'Yes', 'Idle'],
   sit:       ['Sitting', 'Sit', 'Idle'],
 };
@@ -33,9 +35,10 @@ const ANIM_KEYWORDS = {
   idle:      ['idle', 'breath', 'breathe', 'stand', 'standing', 'loop'],
   walk:      ['walk', 'walking', 'stroll', 'locomotion'],
   run:       ['run', 'running', 'jog', 'sprint'],
-  dance:     ['dance', 'dancing', 'groove', 'celebrate', 'celebration'],
+  dance:     ['dance', 'dancing', 'groove', 'celebrate', 'celebration', 'energetic'],
   wave:      ['wave', 'hello', 'hi', 'greet'],
-  sing:      ['sing', 'song', 'vocal', 'karaoke', 'microphone'],
+  sing:      ['sing', 'song', 'vocal', 'karaoke', 'microphone', 'routine'],
+  throw:     ['throw', 'snowball', 'snow', 'attack', 'magic', 'cast', 'projectile', '1h'],
   happy:     ['happy', 'joy', 'cheer', 'jump', 'victory', 'thumbsup'],
   surprised: ['surprise', 'surprised', 'shock', 'panic', 'react', 'no'],
 };
@@ -70,6 +73,7 @@ class ProceduralCharacterAdapter {
       dance: { action: 'dance', label: 'Танцуй!', emoji: '💃', clipName: 'dance', displayClip: 'dance', enabled: true },
       sing: { action: 'sing', label: 'Пой!', emoji: '🎵', clipName: 'sing', displayClip: 'sing', enabled: true },
       wave: { action: 'wave', label: 'Помаши!', emoji: '👋', clipName: 'wave', displayClip: 'wave', enabled: true },
+      throw: { action: 'throw', label: 'Снежок!', emoji: '☄️', clipName: 'throw', displayClip: 'throw', enabled: true },
     };
     this._current = 'idle';
   }
@@ -87,8 +91,8 @@ class ProceduralCharacterAdapter {
     this.onStatusChange?.({
       current: this._current,
       currentLabel: this._current,
-      clips: ['idle', 'dance', 'wave', 'sing', 'happy', 'surprised'],
-      clipCount: 6,
+      clips: ['idle', 'dance', 'wave', 'sing', 'throw', 'happy', 'surprised'],
+      clipCount: 7,
     });
   }
 
@@ -105,15 +109,15 @@ class ProceduralCharacterAdapter {
   }
 
   getActionAvailability() {
-    return { dance: true, sing: true, wave: true };
+    return { dance: true, sing: true, wave: true, throw: true };
   }
 
   getAnimationStatus() {
     return {
       current: this._current,
       currentLabel: this._current,
-      clips: ['idle', 'dance', 'wave', 'sing', 'happy', 'surprised'],
-      clipCount: 6,
+      clips: ['idle', 'dance', 'wave', 'sing', 'throw', 'happy', 'surprised'],
+      clipCount: 7,
     };
   }
 
@@ -137,9 +141,9 @@ class ProceduralCharacterAdapter {
   }
 
   playOnce(name, returnTo = 'idle') {
-    const mapped = ['dance', 'wave', 'sing', 'happy', 'surprised'].includes(name) ? name : 'idle';
+    const mapped = ['dance', 'wave', 'sing', 'throw', 'happy', 'surprised'].includes(name) ? name : 'idle';
     this._current = mapped;
-    this._snowman?.playAnimation(mapped);
+    this._snowman?.playAnimation(mapped === 'throw' ? 'happy' : mapped);
     this._notifyAnimationStatus();
     setTimeout(() => {
       this._current = returnTo;
@@ -340,18 +344,11 @@ export class Character {
     const bindings = {};
     const used = new Set();
     const reserved = new Set([this._genericMap.idle, this._genericMap.walk, this._genericMap.run].filter(Boolean));
-    const clipNames = Object.keys(this._acts);
 
     for (const [action, meta] of Object.entries(ACTION_META)) {
       let clipName = this._genericMap[action] || null;
       if (clipName && used.has(clipName)) clipName = null;
-
-      if (!clipName) {
-        clipName =
-          clipNames.find(name => !used.has(name) && !reserved.has(name)) ||
-          clipNames.find(name => !used.has(name)) ||
-          null;
-      }
+      if (clipName && reserved.has(clipName)) clipName = null;
 
       bindings[action] = {
         action,
@@ -511,7 +508,7 @@ export class Character {
   }
 
   getRecommendedPlacement(camera, floorY = -1.2) {
-    const visibleRatio = camera.aspect < 0.72 ? 0.20 : 0.23;
+    const visibleRatio = camera.aspect < 0.72 ? 0.18 : 0.21;
     const fov = THREE.MathUtils.degToRad(camera.fov);
     const height = this._modelSize.y || TARGET_HEIGHT;
     const depth = Math.max(this._modelSize.z || 0.5, 0.4);
@@ -520,7 +517,7 @@ export class Character {
     return {
       x: 0,
       y: floorY,
-      z: -THREE.MathUtils.clamp(distance, 4.1, 6.2),
+      z: -THREE.MathUtils.clamp(distance, 4.6, 6.8),
     };
   }
 

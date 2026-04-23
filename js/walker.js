@@ -9,8 +9,8 @@ import * as THREE from 'three';
 
 // World-space movement bounds (must stay on-screen)
 const BOUNDS = {
-  x: [-1.1, 1.1],
-  z: [-3.4, -1.8],
+  x: [-2.25, 2.25],
+  z: [-6.1, -1.55],
 };
 
 // How fast the character turns (rad/sec, scales with distance)
@@ -43,6 +43,7 @@ export class Walker {
   get isMoving()     { return this.state === 'walking' || this.state === 'running'; }
   get currentSpeed() { return this._speed; }
   get smoothSpeed()  { return this._smoothSpeed; }
+  get bounds()       { return { ...BOUNDS }; }
 
   // ── Public API ─────────────────────────────────────────────
   walkTo(target, run = false) {
@@ -50,6 +51,13 @@ export class Walker {
     this._speed  = run ? this.RUN_SPEED : this.WALK_SPEED;
     this.state   = run ? 'running' : 'walking';
     this._char?.playGeneric(run ? 'run' : 'walk', { fade: 0.22 });
+  }
+
+  screenToWorld(nx, ny) {
+    const x = THREE.MathUtils.mapLinear(nx, -1, 1, BOUNDS.x[0], BOUNDS.x[1]);
+    const depthLerp = THREE.MathUtils.clamp((1 - ny) * 0.5, 0, 1);
+    const z = THREE.MathUtils.lerp(BOUNDS.z[0], BOUNDS.z[1], depthLerp);
+    return new THREE.Vector3(x, this._group.position.y, z);
   }
 
   stopAndIdle() {

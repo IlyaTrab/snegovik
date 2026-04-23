@@ -10,9 +10,6 @@ import { QuestManager }            from './quests.js';
 import { UIManager }               from './ui.js';
 import { AudioManager }            from './audio.js';
 
-// Floor plane for tap-to-walk raycasting (y = -1.2 world)
-const FLOOR_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1.2);
-
 // Double-tap threshold (ms)
 const DBL_TAP_MS = 380;
 
@@ -244,18 +241,18 @@ class App {
     this.particles = new SnowParticles(this.scene);
 
     // Ambient 3D snowflakes
-    const count = 120;
+    const count = 52;
     const pos   = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      pos[i*3]   = (Math.random() - 0.5) * 10;
-      pos[i*3+1] = Math.random() * 8 - 2;
-      pos[i*3+2] = -1 - Math.random() * 7;
+      pos[i*3]   = (Math.random() - 0.5) * 8.5;
+      pos[i*3+1] = Math.random() * 7 - 1.4;
+      pos[i*3+2] = -1.2 - Math.random() * 6.4;
     }
     const sfGeo = new THREE.BufferGeometry();
     sfGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     const sfMesh = new THREE.Points(
       sfGeo,
-      new THREE.PointsMaterial({ color: 0xCCE4FF, size: 0.06, transparent: true, opacity: 0.75 })
+      new THREE.PointsMaterial({ color: 0xCCE4FF, size: 0.04, transparent: true, opacity: 0.42 })
     );
     this.scene.add(sfMesh);
     this._sfMesh = sfMesh;
@@ -285,15 +282,15 @@ class App {
       if (this.sm.isAny(GameState.AR_ACTIVE, GameState.QUEST_ACTIVE)) {
         this.ui.spawnSnowflake();
       }
-    }, 1600);
+    }, 3200);
   }
 
   _animSnowflakes() {
     if (!this._sfGeo) return;
     const arr = this._sfGeo.attributes.position.array;
     for (let i = 1; i < arr.length; i += 3) {
-      arr[i] -= 0.0038;
-      if (arr[i] < -2.5) arr[i] = 6;
+      arr[i] -= 0.0024;
+      if (arr[i] < -2.1) arr[i] = 5.4;
     }
     this._sfGeo.attributes.position.needsUpdate = true;
   }
@@ -331,10 +328,8 @@ class App {
       return;
     }
 
-    // Floor tap → walk
-    const floorPt = new THREE.Vector3();
-    const hit     = this._rc.ray.intersectPlane(FLOOR_PLANE, floorPt);
-    if (hit) this._onFloorTap(floorPt);
+    const walkTarget = this.walker?.screenToWorld(this._ptr.x, this._ptr.y);
+    if (walkTarget) this._onFloorTap(walkTarget);
   }
 
   _onCharTap(hitPoint) {
@@ -343,7 +338,7 @@ class App {
     this._lastTapTime = now;
 
     this.character.tap();
-    this.particles.burst(hitPoint, 18);
+    this.particles.burst(hitPoint, 10);
 
     // Quest triggers
     if (dbl) {
@@ -376,7 +371,7 @@ class App {
     this.audio.playSuccess();
     if (this.particles && this.character) {
       const p = this.character.group.position.clone().add(new THREE.Vector3(0, 1.2, 0));
-      this.particles.burst(p, 16, 0xAAFFCC);
+      this.particles.burst(p, 10, 0xAAFFCC);
     }
   }
 
@@ -393,8 +388,8 @@ class App {
     this.audio.playSuccess();
 
     // Particles above head
-    const p = this.character.group.position.clone().add(new THREE.Vector3(0, 1.8, -0.3));
-    this.particles.burst(p, 14, 0xAAFFCC);
+    const p = this.character.group.position.clone().add(new THREE.Vector3(0, 1.5, -0.3));
+    this.particles.burst(p, action === 'throw' ? 12 : 8, action === 'throw' ? 0xEAF6FF : 0xAAFFCC);
 
     this._completeTrigger('action_' + action);
   }
@@ -420,7 +415,7 @@ class App {
       this.character.playOnce('happy', 'idle', 0.2);
       this.ui.showSpeech('🔥 КОМБО x' + combo + '!', 3000);
       const p2 = this.character.group.position.clone().add(new THREE.Vector3(0, 2.0, 0));
-      this.particles.burst(p2, 40, 0xFF6600);
+      this.particles.burst(p2, 24, 0xFF6600);
     }
 
     this.ui.hideQuestPanel();

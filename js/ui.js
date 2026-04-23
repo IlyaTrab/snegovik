@@ -164,10 +164,10 @@ export class UIManager {
   spawnSnowflake() {
     const el = document.createElement('div');
     el.className = 'snowflake-particle';
-    el.textContent = ['❄', '❅', '❆', '⭐', '✨'][Math.floor(Math.random() * 5)];
+    el.textContent = ['❄', '❅'][Math.floor(Math.random() * 2)];
     el.style.left = (Math.random() * 96 + 2) + 'vw';
-    el.style.fontSize = (12 + Math.random() * 16) + 'px';
-    const dur = 2.5 + Math.random() * 3;
+    el.style.fontSize = (10 + Math.random() * 10) + 'px';
+    const dur = 3.4 + Math.random() * 2.2;
     el.style.animationDuration = dur + 's';
     document.body.appendChild(el);
     setTimeout(() => el.remove(), dur * 1000);

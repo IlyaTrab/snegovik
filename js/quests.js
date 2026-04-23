@@ -49,6 +49,17 @@ export const QUEST_POOL = [
     hint: 'Нажми «Пой!»',
   },
   {
+    id: 'action_throw',
+    title: '☄️ Кинь снежок!',
+    desc: 'Нажми кнопку «Снежок!»',
+    trigger: 'action_throw',
+    anim: 'throw',
+    once: false,
+    speech: 'throw',
+    points: 45,
+    hint: 'Нажми «Снежок!»',
+  },
+  {
     id: 'walk_to',
     title: '🚶 Позови сюда!',
     desc: 'Нажми на пустое место - снеговик придет!',
@@ -103,7 +114,7 @@ function isQuestAvailable(quest, availableActions) {
 }
 
 export class QuestManager {
-  constructor({ availableActions = { dance: true, sing: true, wave: true } } = {}) {
+  constructor({ availableActions = { dance: true, sing: true, wave: true, throw: true } } = {}) {
     this._pool = QUEST_POOL.filter(quest => isQuestAvailable(quest, availableActions));
     this._queue = [];
     this._active = null;
