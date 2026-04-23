@@ -4,11 +4,10 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 export const MODEL_URL = new URL('../assets/models/snowman.glb', import.meta.url).href;
 
-const TARGET_HEIGHT = 0.95;
+const TARGET_HEIGHT = 0.78;
 const GENERIC_KEYS = ['idle', 'walk', 'run', 'dance', 'wave', 'sing', 'happy', 'surprised'];
 const ACTION_META = {
   dance: { label: 'Танцуй!', emoji: '💃' },
@@ -113,14 +112,24 @@ export class Character {
 
   async load(scene, url = MODEL_URL) {
     const loader = new GLTFLoader();
-    const draco = new DRACOLoader();
+    let gltf;
 
-    draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
-    loader.setDRACOLoader(draco);
+    try {
+      gltf = await new Promise((resolve, reject) => {
+        loader.load(url, resolve, undefined, reject);
+      });
+    } catch (loadError) {
+      const response = await fetch(url, { cache: 'no-store' });
+      if (!response.ok) {
+        throw loadError;
+      }
 
-    const gltf = await new Promise((resolve, reject) => {
-      loader.load(url, resolve, undefined, reject);
-    });
+      const arrayBuffer = await response.arrayBuffer();
+      const baseUrl = new URL('./', url).href;
+      gltf = await new Promise((resolve, reject) => {
+        loader.parse(arrayBuffer, baseUrl, resolve, reject);
+      });
+    }
 
     this._acts = {};
     this._cur = null;
@@ -175,7 +184,8 @@ export class Character {
     this._genericMap = this._buildGenericMap(Object.keys(this._acts));
     this._actionBindings = this._buildActionBindings();
     this._notifyActionBindings();
-    this.playGeneric('idle', { fade: 0, fallbackToAny: false });
+    const startedIdle = this.playGeneric('idle', { fade: 0, fallbackToAny: false });
+    if (!startedIdle) this._stopCurrent();
   }
 
   _buildGenericMap(clipNames) {
@@ -405,7 +415,7 @@ export class Character {
   }
 
   getRecommendedPlacement(camera, floorY = -1.2) {
-    const visibleRatio = camera.aspect < 0.72 ? 0.24 : 0.28;
+    const visibleRatio = camera.aspect < 0.72 ? 0.20 : 0.23;
     const fov = THREE.MathUtils.degToRad(camera.fov);
     const height = this._modelSize.y || TARGET_HEIGHT;
     const depth = Math.max(this._modelSize.z || 0.5, 0.4);
@@ -414,7 +424,7 @@ export class Character {
     return {
       x: 0,
       y: floorY,
-      z: -THREE.MathUtils.clamp(distance, 3.6, 5.4),
+      z: -THREE.MathUtils.clamp(distance, 4.1, 6.2),
     };
   }
 
