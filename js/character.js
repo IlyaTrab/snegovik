@@ -18,7 +18,7 @@ const ACTION_META = {
 };
 
 const ANIM_MAP = {
-  idle:      ['Idle', 'idle', 'Standing', 'IDLE', 'Armature|Idle'],
+  idle:      ['Idle', 'idle', 'IDLE', 'Armature|Idle', 'Standing Idle', 'Stand Idle'],
   walk:      ['Walk', 'Walking', 'walk', 'WALK'],
   run:       ['Run', 'Running', 'run', 'RUN', 'WalkJump'],
   dance:     ['Dance', 'dance', 'DANCE', 'Dive', 'Basic Sing Energetic', 'Basic Sing'],
@@ -32,7 +32,7 @@ const ANIM_MAP = {
 };
 
 const ANIM_KEYWORDS = {
-  idle:      ['idle', 'breath', 'breathe', 'stand', 'standing', 'loop'],
+  idle:      ['idle', 'breath', 'breathe', 'loop', 'rest'],
   walk:      ['walk', 'walking', 'stroll', 'locomotion'],
   run:       ['run', 'running', 'jog', 'sprint'],
   dance:     ['dance', 'dancing', 'groove', 'celebrate', 'celebration', 'energetic'],
@@ -328,6 +328,10 @@ export class Character {
       else if (normalizedName.includes(keyword)) score += 70;
     }
 
+    if (generic === 'idle' && /\b(attack|magic|sing|routine|claw|hair|energetic|dance)\b/.test(normalizedName)) {
+      score -= 500;
+    }
+
     return score;
   }
 
@@ -344,11 +348,17 @@ export class Character {
     const bindings = {};
     const used = new Set();
     const reserved = new Set([this._genericMap.idle, this._genericMap.walk, this._genericMap.run].filter(Boolean));
+    const clipNames = Object.keys(this._acts);
 
     for (const [action, meta] of Object.entries(ACTION_META)) {
       let clipName = this._genericMap[action] || null;
       if (clipName && used.has(clipName)) clipName = null;
       if (clipName && reserved.has(clipName)) clipName = null;
+      if (!clipName) {
+        clipName =
+          clipNames.find(name => !used.has(name) && !reserved.has(name)) ||
+          null;
+      }
 
       bindings[action] = {
         action,

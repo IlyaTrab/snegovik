@@ -14,9 +14,6 @@ export class UIManager {
     this._questDescEl = document.getElementById('quest-desc-text');
     this._comboEl = document.getElementById('combo-badge');
     this._comboValEl = document.getElementById('combo-value');
-    this._animPanelEl = document.getElementById('anim-status');
-    this._animCurrentEl = document.getElementById('anim-current');
-    this._animListEl = document.getElementById('anim-list');
     this._actionButtons = new Map(
       [...document.querySelectorAll('.action-btn')].map(btn => [btn.dataset.action, btn]),
     );
@@ -96,13 +93,9 @@ export class UIManager {
   }
 
   updateAnimationStatus({ currentLabel, clips, clipCount }) {
-    if (!this._animPanelEl) return;
-
-    this._animPanelEl.classList.toggle('hidden', !clipCount);
-    if (!clipCount) return;
-
-    this._animCurrentEl.textContent = currentLabel;
-    this._animListEl.textContent = clips.join(' • ');
+    void currentLabel;
+    void clips;
+    void clipCount;
   }
 
   showSpeech(text, duration = 2800) {

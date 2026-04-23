@@ -151,7 +151,7 @@ p {
   position: absolute;
   top:   calc(env(safe-area-inset-top,  0px) + 16px);
   right: 16px;
-  max-width: min(38vw, 180px);
+  max-width: min(34vw, 168px);
   background: var(--glass);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -175,7 +175,7 @@ p {
   position: absolute;
   top:   calc(env(safe-area-inset-top, 0px) + 16px);
   left:  16px;
-  width: min(54vw, 270px);
+  width: min(48vw, 238px);
   background: var(--glass);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -404,38 +404,6 @@ p {
   to   { transform: scale(1)   rotate(0deg);   opacity: 1; }
 }
 
-#anim-status {
-  position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 106px);
-  left: 16px;
-  max-width: min(54vw, 270px);
-  background: rgba(7,16,48,0.78);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.14);
-  border-radius: 16px;
-  padding: 10px 12px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.28);
-  pointer-events: none;
-}
-
-.anim-status-title {
-  font-size: 12px;
-  font-weight: 900;
-  color: rgba(255,255,255,0.82);
-  margin-bottom: 4px;
-}
-
-#anim-current {
-  color: var(--accent);
-}
-
-#anim-list {
-  font-size: 11px;
-  line-height: 1.35;
-  color: rgba(255,255,255,0.58);
-}
-
 /* ── Combo bonus text (inside quest-complete card) ──────── */
 .combo-bonus {
   font-size: 16px; font-weight: 800;
@@ -465,17 +433,12 @@ p {
 
 @media (max-width: 430px) {
   #quest-panel {
-    width: min(52vw, 232px);
+    width: min(50vw, 214px);
     padding: 12px 14px;
   }
 
   #score-bar {
     padding: 10px 16px;
-  }
-
-  #anim-status {
-    top: calc(env(safe-area-inset-top, 0px) + 118px);
-    max-width: min(52vw, 220px);
   }
 
   #hint-bar {
