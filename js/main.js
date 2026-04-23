@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 import { StateMachine, GameState } from './state.js';
 import { CameraManager }           from './camera.js';
-import { Character, MODEL_URL }    from './character.js';
+import { Character }               from './character.js';
 import { Walker }                  from './walker.js';
 import { SnowParticles }           from './particles.js';
 import { Star }                    from './star.js';

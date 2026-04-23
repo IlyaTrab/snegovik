@@ -1,18 +1,12 @@
 /**
  * character.js  —  GLTF character loader with AnimationMixer blending
- *
- * Swap MODEL_URL to your Meshy CDN link:
- *   e.g. https://assets.meshy.ai/<uuid>/tasks/<task-id>/output/model.glb
- * (get it: Meshy → My Models → Share/Export → copy direct .glb URL)
  */
 
 import * as THREE  from 'three';
 import { GLTFLoader }  from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
-// ── Swap this URL for the Meshy / custom model ────────────────
-export const MODEL_URL =
-  'https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb';
+export const MODEL_URL = new URL('../assets/models/snowman.glb', import.meta.url).href;
 
 // Target visual height in world units
 const TARGET_HEIGHT = 1.75;
@@ -22,11 +16,11 @@ const ANIM_MAP = {
   idle:      ['Idle', 'idle', 'Standing', 'IDLE', 'Armature|Idle'],
   walk:      ['Walk', 'Walking', 'walk', 'WALK'],
   run:       ['Run', 'Running', 'run', 'RUN', 'WalkJump'],
-  dance:     ['Dance', 'dance', 'DANCE'],
-  wave:      ['Wave', 'wave', 'WAVE'],
-  happy:     ['Jump', 'Yes', 'ThumbsUp', 'Happy', 'happy'],
-  surprised: ['No', 'Punch', 'Surprised', 'surprised'],
-  sing:      ['Yes', 'Idle', 'Standing', 'sing'],
+  dance:     ['Dance', 'dance', 'DANCE', 'Dive'],
+  wave:      ['Wave', 'wave', 'WAVE', 'Dive'],
+  happy:     ['Jump', 'Yes', 'ThumbsUp', 'Happy', 'happy', 'Dive'],
+  surprised: ['No', 'Punch', 'Surprised', 'surprised', 'Dive'],
+  sing:      ['Yes', 'sing', 'Dive'],
   thumbsup:  ['ThumbsUp', 'Yes', 'Idle'],
   sit:       ['Sitting', 'Sit', 'Idle'],
 };
@@ -114,13 +108,20 @@ export class Character {
     if (!clips?.length) return;
     this._mixer = new THREE.AnimationMixer(this.model);
     clips.forEach(c => { this._acts[c.name] = this._mixer.clipAction(c); });
-    this.playGeneric('idle', { fade: 0 });
+    this.playGeneric('idle', { fade: 0, fallbackToAny: false });
   }
 
   // Resolve generic name to actual available clip name
-  _resolve(generic) {
+  _resolve(generic, { fallbackToAny = false } = {}) {
     const candidates = ANIM_MAP[generic] || [generic];
-    return candidates.find(n => this._acts[n]) ?? Object.keys(this._acts)[0];
+    const resolved = candidates.find(n => this._acts[n]);
+    return resolved ?? (fallbackToAny ? Object.keys(this._acts)[0] ?? null : null);
+  }
+
+  _stopCurrent() {
+    if (!this._cur || !this._acts[this._cur]) return;
+    this._acts[this._cur].stop();
+    this._cur = null;
   }
 
   // ── Animation control ──────────────────────────────────────
@@ -140,13 +141,22 @@ export class Character {
   }
 
   playGeneric(name, opts = {}) {
-    this.play(this._resolve(name), opts);
+    const fallbackToAny = opts.fallbackToAny ?? !['idle', 'walk', 'run'].includes(name);
+    const clipName = this._resolve(name, { fallbackToAny });
+    if (!clipName) {
+      if (name === 'idle') this._stopCurrent();
+      return;
+    }
+    this.play(clipName, opts);
   }
 
   playOnce(name, returnTo = 'idle', fade = 0.28) {
-    const resolved  = this._resolve(name);
-    const returnRes = this._resolve(returnTo);
-    if (!this._acts[resolved]) { this.playGeneric(returnTo); return; }
+    const resolved  = this._resolve(name, { fallbackToAny: true });
+    const returnRes = this._resolve(returnTo, { fallbackToAny: false });
+    if (!resolved || !this._acts[resolved]) {
+      this.playGeneric(returnTo, { fade: 0.3, fallbackToAny: false });
+      return;
+    }
 
     this.play(resolved, { fade, loop: false });
     this._cur = null; // allow transition in handler
@@ -155,7 +165,11 @@ export class Character {
       if (e.action === this._acts[resolved]) {
         this._mixer.removeEventListener('finished', handler);
         this._cur = null;
-        this.play(returnRes, { fade: 0.3 });
+        if (returnRes) {
+          this.play(returnRes, { fade: 0.3 });
+        } else {
+          this._acts[resolved].stop();
+        }
       }
     };
     this._mixer.addEventListener('finished', handler);
