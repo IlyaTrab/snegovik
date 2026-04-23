@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 import { StateMachine, GameState } from './state.js';
 import { CameraManager }           from './camera.js';
-import { Character }               from './character.js';
+import { Character, ProceduralCharacterAdapter } from './character.js';
 import { Walker }                  from './walker.js';
 import { SnowParticles }           from './particles.js';
 import { Star }                    from './star.js';
@@ -215,7 +215,17 @@ class App {
     this.character = new Character();
     this.character.onStatusChange = status => this.ui.updateAnimationStatus(status);
     this.character.onActionBindingsChange = bindings => this.ui.updateActionButtons(bindings);
-    await this.character.load(this.scene);
+
+    try {
+      await this.character.load(this.scene);
+    } catch (err) {
+      console.warn('[AR] GLB load failed, falling back to procedural snowman.', err);
+      this.character = new ProceduralCharacterAdapter();
+      this.character.onStatusChange = status => this.ui.updateAnimationStatus(status);
+      this.character.onActionBindingsChange = bindings => this.ui.updateActionButtons(bindings);
+      await this.character.load(this.scene);
+      this.ui.showSpeech('GLB не загрузился, показываю встроенного снеговика.', 3200);
+    }
 
     // Position character using fitted bounds so different GLBs stay in-frame.
     const placement = this.character.getRecommendedPlacement(this.cam3d, -1.2);

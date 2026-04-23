@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { Snowman } from './snowman.js';
 
 export const MODEL_URL = new URL('../assets/models/snowman.glb', import.meta.url).href;
 
@@ -55,6 +56,101 @@ function prettyClipName(name) {
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+class ProceduralCharacterAdapter {
+  constructor() {
+    this.group = null;
+    this.loaded = false;
+    this.baseY = -1.05;
+    this.onStatusChange = null;
+    this.onActionBindingsChange = null;
+    this._snowman = null;
+    this._actionBindings = {
+      dance: { action: 'dance', label: 'Танцуй!', emoji: '💃', clipName: 'dance', displayClip: 'dance', enabled: true },
+      sing: { action: 'sing', label: 'Пой!', emoji: '🎵', clipName: 'sing', displayClip: 'sing', enabled: true },
+      wave: { action: 'wave', label: 'Помаши!', emoji: '👋', clipName: 'wave', displayClip: 'wave', enabled: true },
+    };
+    this._current = 'idle';
+  }
+
+  async load(scene) {
+    this._snowman = new Snowman(scene);
+    this.group = this._snowman.group;
+    this.loaded = true;
+    this._notifyActionBindings();
+    this._notifyAnimationStatus();
+    return this;
+  }
+
+  _notifyAnimationStatus() {
+    this.onStatusChange?.({
+      current: this._current,
+      currentLabel: this._current,
+      clips: ['idle', 'dance', 'wave', 'sing', 'happy', 'surprised'],
+      clipCount: 6,
+    });
+  }
+
+  _notifyActionBindings() {
+    this.onActionBindingsChange?.(this._actionBindings);
+  }
+
+  getRecommendedPlacement(_camera, floorY = -1.2) {
+    return { x: 0, y: floorY, z: -4.3 };
+  }
+
+  getActionBindings() {
+    return this._actionBindings;
+  }
+
+  getActionAvailability() {
+    return { dance: true, sing: true, wave: true };
+  }
+
+  getAnimationStatus() {
+    return {
+      current: this._current,
+      currentLabel: this._current,
+      clips: ['idle', 'dance', 'wave', 'sing', 'happy', 'surprised'],
+      clipCount: 6,
+    };
+  }
+
+  getMeshes() {
+    return this._snowman?.getMeshes() || [];
+  }
+
+  tap() {
+    this._snowman?._reactBody();
+  }
+
+  update(dt) {
+    this._snowman?.update(dt);
+  }
+
+  playGeneric(name) {
+    this._current = ['walk', 'run'].includes(name) ? 'idle' : name;
+    if (this._current === 'idle') this._snowman?.playAnimation('idle');
+    this._notifyAnimationStatus();
+    return true;
+  }
+
+  playOnce(name, returnTo = 'idle') {
+    const mapped = ['dance', 'wave', 'sing', 'happy', 'surprised'].includes(name) ? name : 'idle';
+    this._current = mapped;
+    this._snowman?.playAnimation(mapped);
+    this._notifyAnimationStatus();
+    setTimeout(() => {
+      this._current = returnTo;
+      this._notifyAnimationStatus();
+    }, mapped === 'idle' ? 0 : 3000);
+    return true;
+  }
+
+  playAction(action, returnTo = 'idle') {
+    return this.playOnce(action, returnTo);
+  }
 }
 
 class Spring {
@@ -448,3 +544,5 @@ export class Character {
     };
   }
 }
+
+export { ProceduralCharacterAdapter };
