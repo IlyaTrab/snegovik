@@ -9,8 +9,8 @@ import * as THREE from 'three';
 
 // World-space movement bounds (must stay on-screen)
 const BOUNDS = {
-  x: [-2.25, 2.25],
-  z: [-6.1, -1.55],
+  x: [-2.7, 2.7],
+  z: [-8.9, -1.45],
 };
 
 // How fast the character turns (rad/sec, scales with distance)
@@ -55,8 +55,8 @@ export class Walker {
 
   screenToWorld(nx, ny) {
     const x = THREE.MathUtils.mapLinear(nx, -1, 1, BOUNDS.x[0], BOUNDS.x[1]);
-    const depthLerp = THREE.MathUtils.clamp((1 - ny) * 0.5, 0, 1);
-    const z = THREE.MathUtils.lerp(BOUNDS.z[0], BOUNDS.z[1], depthLerp);
+    const depthLerp = Math.pow(THREE.MathUtils.clamp((1 - ny) * 0.5, 0, 1), 0.78);
+    const z = THREE.MathUtils.lerp(BOUNDS.z[1], BOUNDS.z[0], depthLerp);
     return new THREE.Vector3(x, this._group.position.y, z);
   }
 
