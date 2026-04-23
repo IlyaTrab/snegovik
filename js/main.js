@@ -1,38 +1,56 @@
-import * as THREE                  from 'three';
-import { StateMachine, GameState }  from './state.js';
-import { CameraManager }            from './camera.js';
-import { Snowman }                  from './snowman.js';
-import { SnowParticles }            from './particles.js';
-import { QuestManager }             from './quests.js';
-import { UIManager }                from './ui.js';
-import { AudioManager }             from './audio.js';
+import * as THREE from 'three';
 
-class SnowmanApp {
+import { StateMachine, GameState } from './state.js';
+import { CameraManager }           from './camera.js';
+import { Character, MODEL_URL }    from './character.js';
+import { Walker }                  from './walker.js';
+import { SnowParticles }           from './particles.js';
+import { Star }                    from './star.js';
+import { QuestManager }            from './quests.js';
+import { UIManager }               from './ui.js';
+import { AudioManager }            from './audio.js';
+
+// Floor plane for tap-to-walk raycasting (y = -1.2 world)
+const FLOOR_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1.2);
+
+// Double-tap threshold (ms)
+const DBL_TAP_MS = 380;
+
+// ══════════════════════════════════════════════════════════════
+class App {
   constructor() {
-    this.sm       = new StateMachine();
-    this.ui       = new UIManager();
-    this.cam      = new CameraManager();
-    this.audio    = new AudioManager();
-    this.questMgr = null;
-    this.snowman  = null;
-    this.particles = null;
-    this.renderer  = null;
-    this.scene     = null;
-    this.cam3d     = null;
-    this._rc       = new THREE.Raycaster();
-    this._ptr      = new THREE.Vector2();
-    this._clock    = new THREE.Clock();
-    this._sfGeo    = null;
+    this.sm        = new StateMachine();
+    this.ui        = new UIManager();
+    this.cam       = new CameraManager();
+    this.audio     = new AudioManager();
 
-    // Hold-press detection
-    this._holdTimer = null;
+    this.character = null;
+    this.walker    = null;
+    this.particles = null;
+    this.questMgr  = null;
+    this.activeStar = null;
+
+    // Three.js
+    this.renderer = null;
+    this.scene    = null;
+    this.cam3d    = null;
+    this._clock   = new THREE.Clock();
+    this._rc      = new THREE.Raycaster();
+    this._ptr     = new THREE.Vector2();
+    this._sfGeo   = null;
+
+    // Tap state
+    this._lastTapTime   = 0;
+    this._tapOnChar     = false;
+    this._holdTimer     = null;
+    this._dblTapPending = false;
 
     this._bindStates();
     this._bindDOM();
     this.sm.transition(GameState.START);
   }
 
-  // ── State machine ──────────────────────────────────────────
+  // ── State handlers ──────────────────────────────────────────
   _bindStates() {
     this.sm
       .on(GameState.START, () => {
@@ -41,54 +59,29 @@ class SnowmanApp {
       })
       .on(GameState.CAMERA_PROMPT, () => this.ui.showScreen('screen-camera'))
       .on(GameState.AR_INIT,       () => this._initAR())
-      .on(GameState.AR_ACTIVE,     () => {
+      .on(GameState.AR_ACTIVE, () => {
         this.ui.showScreen('screen-ar');
-        this._greetAndStart();
-      })
-      .on(GameState.ALL_QUESTS_DONE, ({ score }) => {
-        this.ui.showFinalReward(score);
-        this.audio.playReward();
-        this.ui.spawnCelebration(35);
-        if (this.snowman) this.snowman.playAnimation('happy', 9000);
-        // Big star burst in 3D
-        if (this.particles && this.snowman) {
-          this.particles.starBurst(this.snowman.group.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
-        }
+        this._greetAndStartQuests();
       })
       .on(GameState.ERROR,    ({ title, msg }) => this.ui.showError(title, msg))
       .on(GameState.FALLBACK, ()               => this.ui.showScreen('screen-fallback'));
   }
 
-  // ── DOM bindings ───────────────────────────────────────────
+  // ── DOM event bindings ──────────────────────────────────────
   _bindDOM() {
-    document.getElementById('btn-start').addEventListener('click', () => {
+    const on = (id, ev, fn) => document.getElementById(id)?.addEventListener(ev, fn);
+
+    on('btn-start', 'click', () => {
       this.audio.init();
       this.audio.resume();
       this.sm.transition(this.cam.isSupported() ? GameState.CAMERA_PROMPT : GameState.FALLBACK);
     });
-
-    document.getElementById('btn-allow-camera').addEventListener('click', () => {
-      this.sm.transition(GameState.AR_INIT);
-    });
-
-    document.getElementById('btn-next-quest').addEventListener('click', () => {
-      this.ui.hideOverlay('screen-quest-complete');
-      this._nextQuest();
-    });
-
-    document.getElementById('btn-restart').addEventListener('click', () => location.reload());
-
-    document.getElementById('btn-retry').addEventListener('click', () => {
-      this.sm.transition(GameState.CAMERA_PROMPT);
-    });
-
-    document.getElementById('btn-fallback-from-error').addEventListener('click', () => {
-      this.sm.transition(GameState.AR_INIT);
-    });
-
-    document.getElementById('btn-fallback-play').addEventListener('click', () => {
-      this.sm.transition(GameState.AR_INIT);
-    });
+    on('btn-allow-camera', 'click', () => this.sm.transition(GameState.AR_INIT));
+    on('btn-next-quest',   'click', () => { this.ui.hideOverlay('screen-quest-complete'); this._nextQuest(); });
+    on('btn-restart',      'click', () => location.reload());
+    on('btn-retry',        'click', () => this.sm.transition(GameState.CAMERA_PROMPT));
+    on('btn-fallback-from-error', 'click', () => this.sm.transition(GameState.AR_INIT));
+    on('btn-fallback-play',       'click', () => this.sm.transition(GameState.AR_INIT));
 
     document.querySelectorAll('.action-btn').forEach(btn => {
       btn.addEventListener('click', e => {
@@ -98,53 +91,45 @@ class SnowmanApp {
       });
     });
 
-    // Canvas tap + hold
+    // Canvas — tap/hold/double-tap
     const canvas = document.getElementById('ar-canvas');
     canvas.style.pointerEvents = 'all';
 
-    const onTapStart = (cx, cy) => {
+    const startHold = () => {
       clearTimeout(this._holdTimer);
-      this._holdTimer = setTimeout(() => {
-        if (this.snowman && this.sm.isAny(GameState.AR_ACTIVE, GameState.QUEST_ACTIVE)) {
-          this.snowman.playAnimation('dance', 2200);
-          this.ui.showSpeech(this.audio.getLine('dance'));
-          this.audio.playSuccess();
-          this.audio.resume();
-        }
-      }, 1100);
+      this._holdTimer = setTimeout(() => this._onHoldFire(), 1100);
     };
-
-    const onTapEnd = (cx, cy) => {
+    const endHold = (cx, cy) => {
       clearTimeout(this._holdTimer);
       this._onTap(cx, cy);
     };
 
-    canvas.addEventListener('click',      e => onTapEnd(e.clientX, e.clientY));
-    canvas.addEventListener('touchstart', e => {
-      const t = e.touches[0];
-      onTapStart(t.clientX, t.clientY);
-    }, { passive: true });
-    canvas.addEventListener('touchend', e => {
+    canvas.addEventListener('click',      e => endHold(e.clientX, e.clientY));
+    canvas.addEventListener('touchstart', e => startHold(), { passive: true });
+    canvas.addEventListener('touchend',   e => {
       e.preventDefault();
       const t = e.changedTouches[0];
-      onTapEnd(t.clientX, t.clientY);
+      endHold(t.clientX, t.clientY);
     }, { passive: false });
     canvas.addEventListener('touchcancel', () => clearTimeout(this._holdTimer), { passive: true });
 
-    // Device orientation — subtle AR feel
+    // Device orientation
     if (window.DeviceOrientationEvent) {
       window.addEventListener('deviceorientation', e => {
-        if (!this.snowman) return;
-        this.snowman.group.rotation.y = (e.gamma || 0) * Math.PI / 180 * 0.22;
+        if (this.character) {
+          // Subtle lean on tilt
+          this.character.group.rotation.z = ((e.gamma || 0) * Math.PI / 180) * 0.04;
+        }
       }, { passive: true });
     }
   }
 
-  // ── AR init ────────────────────────────────────────────────
+  // ── AR initialisation ───────────────────────────────────────
   async _initAR() {
     const loading = document.getElementById('loading');
     loading.style.display = 'flex';
 
+    // Camera
     try {
       await this.cam.requestCamera();
     } catch (err) {
@@ -152,7 +137,7 @@ class SnowmanApp {
       if (err.name === 'NotAllowedError') {
         this.sm.transition(GameState.ERROR, {
           title: 'Нет доступа к камере',
-          msg: 'Разреши камеру в настройках браузера и нажми «Попробовать снова».',
+          msg: 'Разреши камеру в настройках браузера, потом нажми «Попробовать снова».',
         });
       } else {
         this.sm.transition(GameState.FALLBACK);
@@ -160,65 +145,56 @@ class SnowmanApp {
       return;
     }
 
+    // Three.js
     this._initThree();
-    this._buildScene();
+    await this._buildScene();
     this._startRenderLoop();
 
-    this.questMgr = new QuestManager(score => {
-      this.sm.transition(GameState.ALL_QUESTS_DONE, { score });
-    });
+    this.questMgr = new QuestManager();
 
     loading.style.display = 'none';
     this.sm.transition(GameState.AR_ACTIVE);
   }
 
-  // ── Three.js ───────────────────────────────────────────────
+  // ── Three.js setup ──────────────────────────────────────────
   _initThree() {
-    const canvas   = document.getElementById('ar-canvas');
-    this.renderer  = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    const canvas  = document.getElementById('ar-canvas');
+    this.renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setClearColor(0x000000, 0);
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
-    this.renderer.toneMapping       = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
-    this.renderer.outputColorSpace  = THREE.SRGBColorSpace;
+    this.renderer.shadowMap.enabled  = true;
+    this.renderer.shadowMap.type     = THREE.PCFSoftShadowMap;
+    this.renderer.toneMapping        = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.outputColorSpace   = THREE.SRGBColorSpace;
 
     this.scene  = new THREE.Scene();
-    this.cam3d  = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 80);
+    this.cam3d  = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 80);
 
-    // ── Lighting rig ──────────────────────────────────────
-    // Sky/ground hemisphere
-    const hemi = new THREE.HemisphereLight(0xB0CCFF, 0x4466AA, 0.75);
-    this.scene.add(hemi);
+    // ── Lighting ──────────────────────────────────────────────
+    this.scene.add(new THREE.HemisphereLight(0xB8D0FF, 0x5577AA, 0.7));
 
-    // Main sun (warm golden)
-    const sun = new THREE.DirectionalLight(0xFFE4B5, 1.5);
-    sun.position.set(4, 8, 5);
+    const sun = new THREE.DirectionalLight(0xFFE8C0, 1.55);
+    sun.position.set(3, 8, 4);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
     sun.shadow.camera.near = 0.5;
-    sun.shadow.camera.far  = 20;
-    sun.shadow.camera.left = sun.shadow.camera.bottom = -4;
-    sun.shadow.camera.right = sun.shadow.camera.top   =  4;
+    sun.shadow.camera.far  = 14;
+    sun.shadow.camera.left = sun.shadow.camera.bottom = -3;
+    sun.shadow.camera.right = sun.shadow.camera.top   =  3;
     sun.shadow.radius = 3;
     this.scene.add(sun);
 
-    // Cool fill (from left)
-    const fill = new THREE.DirectionalLight(0x88AAFF, 0.55);
+    const fill = new THREE.DirectionalLight(0x88AAFF, 0.5);
     fill.position.set(-4, 3, -2);
     this.scene.add(fill);
 
-    // Rim (back edge highlight — makes the snowman pop)
-    const rim = new THREE.DirectionalLight(0xFFFFFF, 0.45);
+    const rim = new THREE.DirectionalLight(0xFFFFFF, 0.4);
     rim.position.set(0, 2, -6);
     this.scene.add(rim);
 
-    // Bounce from snowy ground
-    const bounce = new THREE.DirectionalLight(0xCCDDFF, 0.22);
-    bounce.position.set(0, -4, 0);
-    this.scene.add(bounce);
+    this.scene.add(new THREE.DirectionalLight(0xCCDDFF, 0.2).position.set(0, -4, 0) && new THREE.DirectionalLight(0xCCDDFF, 0.2));
 
     window.addEventListener('resize', () => {
       this.cam3d.aspect = window.innerWidth / window.innerHeight;
@@ -227,25 +203,35 @@ class SnowmanApp {
     });
   }
 
-  _buildScene() {
-    // Snowman
-    this.snowman = new Snowman(this.scene);
+  async _buildScene() {
+    // Load character
+    this.character = new Character();
+    await this.character.load(this.scene);
 
-    // Particle system
+    // Position character (feet on floor at y=-1.2)
+    this.character.group.position.set(0, -1.2, -2.6);
+    this.character.baseY = -1.2;
+
+    // Walker
+    this.walker = new Walker(this.character.group, this.character);
+
+    // Particles
     this.particles = new SnowParticles(this.scene);
 
-    // Floating 3D snowflakes
+    // Ambient 3D snowflakes
     const count = 120;
     const pos   = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      pos[i * 3]     = (Math.random() - 0.5) * 10;
-      pos[i * 3 + 1] = Math.random() * 8 - 2;
-      pos[i * 3 + 2] = -1 - Math.random() * 7;
+      pos[i*3]   = (Math.random() - 0.5) * 10;
+      pos[i*3+1] = Math.random() * 8 - 2;
+      pos[i*3+2] = -1 - Math.random() * 7;
     }
-    const sfGeo  = new THREE.BufferGeometry();
+    const sfGeo = new THREE.BufferGeometry();
     sfGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    const sfMat  = new THREE.PointsMaterial({ color: 0xD0E8FF, size: 0.06, transparent: true, opacity: 0.8, sizeAttenuation: true });
-    const sfMesh = new THREE.Points(sfGeo, sfMat);
+    const sfMesh = new THREE.Points(
+      sfGeo,
+      new THREE.PointsMaterial({ color: 0xCCE4FF, size: 0.06, transparent: true, opacity: 0.75 })
+    );
     this.scene.add(sfMesh);
     this._sfMesh = sfMesh;
     this._sfGeo  = sfGeo;
@@ -256,19 +242,25 @@ class SnowmanApp {
       requestAnimationFrame(animate);
       const dt = Math.min(this._clock.getDelta(), 0.05);
 
-      if (this.snowman)   this.snowman.update(dt);
+      if (this.walker)    this.walker.update(dt);
+      if (this.character) this.character.update(dt, this.walker?.isMoving, this.walker?.smoothSpeed);
       if (this.particles) this.particles.update(dt);
+      if (this.activeStar) {
+        this.activeStar.update(dt);
+        if (!this.activeStar.alive) this.activeStar = null;
+      }
       this._animSnowflakes();
 
       this.renderer.render(this.scene, this.cam3d);
     };
     animate();
 
+    // UI snowflake effect
     setInterval(() => {
       if (this.sm.isAny(GameState.AR_ACTIVE, GameState.QUEST_ACTIVE)) {
         this.ui.spawnSnowflake();
       }
-    }, 1500);
+    }, 1600);
   }
 
   _animSnowflakes() {
@@ -281,9 +273,9 @@ class SnowmanApp {
     this._sfGeo.attributes.position.needsUpdate = true;
   }
 
-  // ── Tap handling ───────────────────────────────────────────
+  // ── Tap handling ────────────────────────────────────────────
   _onTap(cx, cy) {
-    if (!this.snowman) return;
+    if (!this.character?.loaded) return;
     if (!this.sm.isAny(GameState.AR_ACTIVE, GameState.QUEST_ACTIVE)) return;
 
     this.audio.resume();
@@ -294,79 +286,142 @@ class SnowmanApp {
     this._ptr.y = -(cy / window.innerHeight)  * 2 + 1;
     this._rc.setFromCamera(this._ptr, this.cam3d);
 
-    const hits = this._rc.intersectObjects(this.snowman.getMeshes());
-    if (!hits.length) return;
+    // Check for star tap first
+    if (this.activeStar?.alive) {
+      const starHit = this._rc.intersectObject(this.activeStar.getMesh());
+      if (starHit.length) {
+        this.activeStar.collect(true);
+        this.activeStar = null;
+        this.particles.starBurst(starHit[0].point);
+        this.audio.playSuccess();
+        this._completeTrigger('catch_star');
+        return;
+      }
+    }
 
-    // Particle burst at 3D hit point
-    this.particles.burst(hits[0].point, 20);
+    // Check character tap
+    const charHits = this._rc.intersectObjects(this.character.getMeshes());
+    if (charHits.length) {
+      this._onCharTap(charHits[0].point);
+      return;
+    }
 
-    const trigger = this.snowman.tap(hits[0].object);
-    this._handleTrigger(trigger);
+    // Floor tap → walk
+    const floorPt = new THREE.Vector3();
+    const hit     = this._rc.ray.intersectPlane(FLOOR_PLANE, floorPt);
+    if (hit) this._onFloorTap(floorPt);
   }
 
-  // ── Action buttons ─────────────────────────────────────────
+  _onCharTap(hitPoint) {
+    const now  = Date.now();
+    const dbl  = (now - this._lastTapTime) < DBL_TAP_MS;
+    this._lastTapTime = now;
+
+    this.character.tap();
+    this.particles.burst(hitPoint, 18);
+
+    // Quest triggers
+    if (dbl) {
+      this._completeTrigger('double_tap');
+    } else if (this.walker?.isMoving) {
+      this._completeTrigger('tap_while_walk');
+    } else {
+      this._completeTrigger('tap_body');
+    }
+
+    this.character.playOnce('surprised', 'idle');
+    this.ui.showSpeech(this.audio.getLine('tap'));
+  }
+
+  _onFloorTap(worldPt) {
+    const now = Date.now();
+    const dbl = (now - this._lastTapTime) < DBL_TAP_MS;
+    this._lastTapTime = now;
+
+    this.walker.walkTo(worldPt, dbl); // double-tap = run
+    this._completeTrigger('walk_to');
+  }
+
+  _onHoldFire() {
+    if (!this.character?.loaded) return;
+    if (!this.sm.isAny(GameState.AR_ACTIVE, GameState.QUEST_ACTIVE)) return;
+    this.audio.resume();
+    this.character.playOnce('dance', 'idle', 0.25);
+    this.ui.showSpeech(this.audio.getLine('dance'));
+    this.audio.playSuccess();
+    if (this.particles && this.character) {
+      const p = this.character.group.position.clone().add(new THREE.Vector3(0, 1.2, 0));
+      this.particles.burst(p, 16, 0xAAFFCC);
+    }
+  }
+
+  // ── Action buttons ──────────────────────────────────────────
   _handleAction(action) {
-    const anims = { dance: 'dance', sing: 'sing', wave: 'wave' };
-    this.snowman.playAnimation(anims[action] || 'happy', 3500);
+    const animMap = { dance: 'dance', sing: 'sing', wave: 'wave' };
+    const anim    = animMap[action] || 'happy';
+
+    // Stop walking, do the animation
+    this.walker.stopAndIdle();
+    this.character.playOnce(anim, 'idle', 0.25);
     this.ui.showSpeech(this.audio.getLine(action));
     this.audio.playSuccess();
 
-    // Particle burst above head on action
-    if (this.particles && this.snowman) {
-      const pos = this.snowman.group.position.clone().add(new THREE.Vector3(0, 2.2, -0.5));
-      this.particles.burst(pos, 12, 0xAAFFCC);
-    }
+    // Particles above head
+    const p = this.character.group.position.clone().add(new THREE.Vector3(0, 1.8, -0.3));
+    this.particles.burst(p, 14, 0xAAFFCC);
 
-    this._handleTrigger('action_' + action);
+    this._completeTrigger('action_' + action);
   }
 
-  // ── Quest trigger check ────────────────────────────────────
-  _handleTrigger(trigger) {
-    const done = this.questMgr?.checkTrigger(trigger);
+  // ── Quest logic ─────────────────────────────────────────────
+  _completeTrigger(trigger) {
+    const result = this.questMgr?.tryComplete(trigger);
+    if (!result) return;
 
-    if (done) {
-      this.snowman.playAnimation(done.animation, 3500);
-      this.ui.showSpeech(this.audio.getLine(done.speechKey));
-      this.ui.updateScore(this.questMgr.totalScore);
-      this.audio.playSuccess();
-      this.ui.hideQuestPanel();
+    const { quest, earned, bonus, combo, isComboMilestone } = result;
 
-      // Star burst on quest complete
-      if (this.particles && this.snowman) {
-        const pos = this.snowman.group.position.clone().add(new THREE.Vector3(0, 1.8, -0.4));
-        this.particles.starBurst(pos);
-      }
+    this.ui.updateScore(this.questMgr.totalScore);
+    this.ui.updateCombo(combo);
+    this.audio.playSuccess();
 
-      setTimeout(() => this.ui.showQuestComplete(done), 900);
-    } else {
-      // Generic reactions (not quest trigger)
-      if (trigger === 'tap_nose') {
-        this.snowman.playAnimation('tapNose', 1500);
-        this.ui.showSpeech(this.audio.getLine('nose'));
-      } else if (trigger === 'tap_body') {
-        this.snowman.playAnimation('surprised', 1500);
-        this.ui.showSpeech(this.audio.getLine('tap'));
-      } else if (trigger === 'tap_hat') {
-        this.ui.showSpeech('Не трогай мою шляпу! 🎩');
-      }
+    // Celebration particles
+    const p = this.character.group.position.clone().add(new THREE.Vector3(0, 1.5, -0.3));
+    this.particles.starBurst(p);
+
+    // Special combo milestone celebration
+    if (isComboMilestone) {
+      this.audio.playReward();
+      this.character.playOnce('happy', 'idle', 0.2);
+      this.ui.showSpeech('🔥 КОМБО x' + combo + '!', 3000);
+      const p2 = this.character.group.position.clone().add(new THREE.Vector3(0, 2.0, 0));
+      this.particles.burst(p2, 40, 0xFF6600);
     }
+
+    this.ui.hideQuestPanel();
+    setTimeout(() => {
+      this.ui.showQuestComplete({ title: quest.title, earned, bonus, combo });
+    }, 700);
   }
 
-  // ── Quest flow ─────────────────────────────────────────────
-  _greetAndStart() {
-    this.snowman.playAnimation('happy', 2300);
+  _greetAndStartQuests() {
+    this.character.playOnce('happy', 'idle', 0.3);
     this.ui.showSpeech(this.audio.getLine('greet'), 2800);
     setTimeout(() => this._nextQuest(), 2700);
   }
 
   _nextQuest() {
-    const quest = this.questMgr.startNext();
-    if (!quest) return;
     this.sm.transition(GameState.QUEST_ACTIVE);
+    const quest = this.questMgr.startNext();
     this.ui.showQuestPanel(quest);
     this.ui.setHint(quest.hint);
     this.ui.showSpeech(this.audio.getLine('questStart'));
+
+    // Spawn star if it's a catch_star quest
+    if (quest.id === 'catch_star') {
+      if (this.activeStar) this.activeStar.collect(false);
+      this.activeStar = new Star(this.scene, this.character.group.position);
+    }
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => new SnowmanApp());
+document.addEventListener('DOMContentLoaded', () => new App());

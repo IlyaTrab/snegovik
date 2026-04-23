@@ -41,25 +41,39 @@
 
     <!-- AR HUD -->
     <div id="screen-ar" class="screen">
+
+      <!-- Score -->
       <div id="score-bar">
         <span class="score-icon">⭐</span>
         <span id="score-value">0</span>
         <span class="score-label">очков</span>
       </div>
 
+      <!-- Combo badge -->
+      <div id="combo-badge" class="hidden">
+        <span id="combo-value">🔥 x3</span>
+      </div>
+
+      <!-- Quest panel -->
       <div id="quest-panel" class="hidden">
         <div id="quest-title-text"></div>
         <div id="quest-desc-text"></div>
       </div>
 
+      <!-- Speech bubble -->
       <div id="speech-bubble" class="hidden">
         <span id="speech-text"></span>
       </div>
 
+      <!-- Hint -->
       <div id="hint-bar">
         <span id="hint-text">Нажми на снеговика!</span>
       </div>
 
+      <!-- Tip: tap ground to walk -->
+      <div id="walk-tip">👆 Нажми на пол — снеговик пойдёт туда</div>
+
+      <!-- Action buttons -->
       <div id="action-buttons">
         <button class="action-btn" data-action="dance">💃<br>Танцуй!</button>
         <button class="action-btn" data-action="sing">🎵<br>Пой!</button>
@@ -73,11 +87,12 @@
         <span class="reward-stars">⭐⭐⭐</span>
         <h2 id="quest-complete-title">Квест выполнен!</h2>
         <div id="points-earned" class="points-big">+50</div>
+        <div id="quest-bonus" class="combo-bonus hidden"></div>
         <button id="btn-next-quest" class="btn-primary">Дальше!</button>
       </div>
     </div>
 
-    <!-- Final reward -->
+    <!-- Final reward (optional, kept as fallback) -->
     <div id="screen-reward" class="screen">
       <div class="card">
         <span class="big-emoji trophy-anim">🏆</span>
@@ -100,7 +115,7 @@
       </div>
     </div>
 
-    <!-- Fallback (no camera) -->
+    <!-- Fallback -->
     <div id="screen-fallback" class="screen">
       <div class="card">
         <span class="big-emoji bounce">⛄</span>
