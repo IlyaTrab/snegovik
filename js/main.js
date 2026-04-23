@@ -150,8 +150,6 @@ class App {
     await this._buildScene();
     this._startRenderLoop();
 
-    this.questMgr = new QuestManager();
-
     loading.style.display = 'none';
     this.sm.transition(GameState.AR_ACTIVE);
   }
@@ -206,14 +204,22 @@ class App {
   async _buildScene() {
     // Load character
     this.character = new Character();
+    this.character.onStatusChange = status => this.ui.updateAnimationStatus(status);
+    this.character.onActionBindingsChange = bindings => this.ui.updateActionButtons(bindings);
     await this.character.load(this.scene);
 
-    // Position character (feet on floor at y=-1.2)
-    this.character.group.position.set(0, -1.2, -2.6);
-    this.character.baseY = -1.2;
+    // Position character using fitted bounds so different GLBs stay in-frame.
+    const placement = this.character.getRecommendedPlacement(this.cam3d, -1.2);
+    this.character.group.position.set(placement.x, placement.y, placement.z);
+    this.character.baseY = placement.y;
+    this.ui.updateActionButtons(this.character.getActionBindings());
+    this.ui.updateAnimationStatus(this.character.getAnimationStatus());
 
     // Walker
     this.walker = new Walker(this.character.group, this.character);
+    this.questMgr = new QuestManager({
+      availableActions: this.character.getActionAvailability(),
+    });
 
     // Particles
     this.particles = new SnowParticles(this.scene);
@@ -357,12 +363,13 @@ class App {
 
   // ── Action buttons ──────────────────────────────────────────
   _handleAction(action) {
-    const animMap = { dance: 'dance', sing: 'sing', wave: 'wave' };
-    const anim    = animMap[action] || 'happy';
-
     // Stop walking, do the animation
     this.walker.stopAndIdle();
-    this.character.playOnce(anim, 'idle', 0.25);
+    const played = this.character.playAction(action, 'idle', 0.25);
+    if (!played) {
+      this.ui.showSpeech('У этой модели пока нет отдельной анимации для кнопки.');
+      return;
+    }
     this.ui.showSpeech(this.audio.getLine(action));
     this.audio.playSuccess();
 

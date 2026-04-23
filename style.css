@@ -266,6 +266,25 @@ p {
   box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 20px rgba(66,165,245,0.3);
 }
 
+.action-btn:disabled {
+  pointer-events: none;
+  cursor: default;
+}
+
+.action-btn.is-disabled {
+  opacity: 0.45;
+  filter: grayscale(0.15);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+}
+
+.action-clip {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.68);
+}
+
 /* ── Quest complete overlay ──────────────────────────────── */
 .overlay {
   background: rgba(0,0,0,0.62);
@@ -375,6 +394,38 @@ p {
 @keyframes comboPop {
   from { transform: scale(0.4) rotate(-10deg); opacity: 0; }
   to   { transform: scale(1)   rotate(0deg);   opacity: 1; }
+}
+
+#anim-status {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 116px);
+  right: 16px;
+  max-width: min(46vw, 260px);
+  background: rgba(7,16,48,0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.28);
+  pointer-events: none;
+}
+
+.anim-status-title {
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.82);
+  margin-bottom: 4px;
+}
+
+#anim-current {
+  color: var(--accent);
+}
+
+#anim-list {
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(255,255,255,0.58);
 }
 
 /* ── Combo bonus text (inside quest-complete card) ──────── */
