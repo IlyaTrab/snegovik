@@ -13,7 +13,7 @@ const GENERIC_KEYS = ['idle', 'walk', 'run', 'dance', 'wave', 'sing', 'throw', '
 const ACTION_META = {
   dance: { label: 'Танцуй!', emoji: '💃' },
   sing:  { label: 'Пой!', emoji: '🎵' },
-  wave:  { label: 'Помаши!', emoji: '👋' },
+  wave:  { label: 'Магия!', emoji: '✨' },
   throw: { label: 'Снежок!', emoji: '☄️' },
 };
 
@@ -22,7 +22,7 @@ const ANIM_MAP = {
   walk:      ['Walk', 'Walking', 'walk', 'WALK'],
   run:       ['Run', 'Running', 'run', 'RUN', 'WalkJump'],
   dance:     ['Dance', 'dance', 'DANCE', 'Dive', 'Basic Sing Energetic', 'Basic Sing'],
-  wave:      ['Wave', 'wave', 'WAVE', 'Hello'],
+  wave:      ['Wave', 'wave', 'WAVE', 'Hello', 'Standing 2H Magic Area Attack', 'Standing 2H', '2H Magic Area Attack'],
   happy:     ['Jump', 'Yes', 'ThumbsUp', 'Happy', 'happy'],
   surprised: ['No', 'Punch', 'Surprised', 'surprised', 'React'],
   sing:      ['Sing', 'sing', 'Song', 'Vocal', 'Routine Claw Hair', 'Routine'],
@@ -36,7 +36,7 @@ const ANIM_KEYWORDS = {
   walk:      ['walk', 'walking', 'stroll', 'locomotion'],
   run:       ['run', 'running', 'jog', 'sprint'],
   dance:     ['dance', 'dancing', 'groove', 'celebrate', 'celebration', 'energetic'],
-  wave:      ['wave', 'hello', 'hi', 'greet'],
+  wave:      ['wave', 'hello', 'hi', 'greet', 'magic', 'area', 'attack', '2h'],
   sing:      ['sing', 'song', 'vocal', 'karaoke', 'microphone', 'routine'],
   throw:     ['throw', 'snowball', 'snow', 'attack', 'magic', 'cast', 'projectile', '1h'],
   happy:     ['happy', 'joy', 'cheer', 'jump', 'victory', 'thumbsup'],
@@ -72,7 +72,7 @@ class ProceduralCharacterAdapter {
     this._actionBindings = {
       dance: { action: 'dance', label: 'Танцуй!', emoji: '💃', clipName: 'dance', displayClip: 'dance', enabled: true },
       sing: { action: 'sing', label: 'Пой!', emoji: '🎵', clipName: 'sing', displayClip: 'sing', enabled: true },
-      wave: { action: 'wave', label: 'Помаши!', emoji: '👋', clipName: 'wave', displayClip: 'wave', enabled: true },
+      wave: { action: 'wave', label: 'Магия!', emoji: '✨', clipName: 'wave', displayClip: 'wave', enabled: true },
       throw: { action: 'throw', label: 'Снежок!', emoji: '☄️', clipName: 'throw', displayClip: 'throw', enabled: true },
     };
     this._current = 'idle';

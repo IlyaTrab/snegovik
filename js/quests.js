@@ -28,14 +28,14 @@ export const QUEST_POOL = [
   },
   {
     id: 'action_wave',
-    title: '👋 Помаши снеговику!',
-    desc: 'Нажми кнопку «Помаши!»',
+    title: '✨ Сделай магию!',
+    desc: 'Нажми кнопку «Магия!»',
     trigger: 'action_wave',
     anim: 'wave',
     once: false,
     speech: 'wave',
     points: 35,
-    hint: 'Нажми «Помаши!»',
+    hint: 'Нажми «Магия!»',
   },
   {
     id: 'action_sing',
