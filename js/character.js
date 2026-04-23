@@ -8,7 +8,7 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 export const MODEL_URL = new URL('../assets/models/snowman.glb', import.meta.url).href;
 
-const TARGET_HEIGHT = 1.25;
+const TARGET_HEIGHT = 0.95;
 const GENERIC_KEYS = ['idle', 'walk', 'run', 'dance', 'wave', 'sing', 'happy', 'surprised'];
 const ACTION_META = {
   dance: { label: 'Танцуй!', emoji: '💃' },
@@ -343,8 +343,12 @@ export class Character {
       this._oneShotHandler = null;
       this._cur = null;
 
-      if (returnRes) this.play(returnRes, { fade: 0.3 });
-      else this._notifyAnimationStatus();
+      if (returnRes) {
+        this.play(returnRes, { fade: 0.3 });
+      } else {
+        this._acts[resolved].stop();
+        this._notifyAnimationStatus();
+      }
     };
 
     this._oneShotHandler = handler;
@@ -401,7 +405,7 @@ export class Character {
   }
 
   getRecommendedPlacement(camera, floorY = -1.2) {
-    const visibleRatio = camera.aspect < 0.72 ? 0.30 : 0.35;
+    const visibleRatio = camera.aspect < 0.72 ? 0.24 : 0.28;
     const fov = THREE.MathUtils.degToRad(camera.fov);
     const height = this._modelSize.y || TARGET_HEIGHT;
     const depth = Math.max(this._modelSize.z || 0.5, 0.4);
@@ -410,7 +414,7 @@ export class Character {
     return {
       x: 0,
       y: floorY,
-      z: -THREE.MathUtils.clamp(distance, 3.0, 4.8),
+      z: -THREE.MathUtils.clamp(distance, 3.6, 5.4),
     };
   }
 

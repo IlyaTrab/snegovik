@@ -147,10 +147,19 @@ class App {
 
     // Three.js
     this._initThree();
-    await this._buildScene();
-    this._startRenderLoop();
-
     loading.style.display = 'none';
+
+    try {
+      await this._buildScene();
+    } catch (err) {
+      console.error('[AR] Scene build failed:', err);
+      this.sm.transition(GameState.ERROR, {
+        title: 'Не удалось загрузить снеговика',
+        msg: 'Камера работает, но модель или анимации не загрузились. Проверь `.glb` и попробуй снова.',
+      });
+      return;
+    }
+    this._startRenderLoop();
     this.sm.transition(GameState.AR_ACTIVE);
   }
 
