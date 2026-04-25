@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { Snowman } from './snowman.js?v=20260425d';
+import { Snowman } from './snowman.js?v=20260425e';
 
 export const MODEL_URL = new URL('../assets/models/snowman.glb', import.meta.url).href;
 
