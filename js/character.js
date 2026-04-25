@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { Snowman } from './snowman.js?v=20260425e';
+import { Snowman } from './snowman.js?v=20260425f';
 
 export const MODEL_URL = new URL('../assets/models/snowman.glb', import.meta.url).href;
 
@@ -37,7 +37,7 @@ export const CHARACTER_CONFIGS = {
     id: 'deer', name: 'Олень', emoji: '🦌',
     url: new URL('../assets/models/deer.glb', import.meta.url).href,
     greetLine: 'Вжуух! Лечу к тебе!',
-    scaleMultiplier: 2.0,
+    scaleMultiplier: 3.0,
     procedural: true,
     actionMeta: {
       dance: { label: 'Галоп!',   emoji: '🦌', animKey: 'dance', effect: 'gallop'  },
