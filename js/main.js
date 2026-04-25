@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 
-import { StateMachine, GameState } from './state.js?v=20260425b';
-import { CameraManager }           from './camera.js?v=20260425b';
-import { Character, ProceduralCharacterAdapter } from './character.js?v=20260425b';
-import { Walker }                  from './walker.js?v=20260425b';
-import { SnowParticles }           from './particles.js?v=20260425b';
-import { Star }                    from './star.js?v=20260425b';
-import { QuestManager }            from './quests.js?v=20260425b';
-import { UIManager }               from './ui.js?v=20260425b';
-import { AudioManager }            from './audio.js?v=20260425b';
+import { StateMachine, GameState } from './state.js?v=20260425c';
+import { CameraManager }           from './camera.js?v=20260425c';
+import { Character, ProceduralCharacterAdapter } from './character.js?v=20260425c';
+import { Walker }                  from './walker.js?v=20260425c';
+import { SnowParticles }           from './particles.js?v=20260425c';
+import { Star }                    from './star.js?v=20260425c';
+import { QuestManager }            from './quests.js?v=20260425c';
+import { UIManager }               from './ui.js?v=20260425c';
+import { AudioManager }            from './audio.js?v=20260425c';
 
 // Double-tap threshold (ms)
 const DBL_TAP_MS = 380;
@@ -410,7 +410,7 @@ class App {
         break;
       case 'wave':
         this.particles.burst(p, 10, 0xAAFFEE);
-        this.ui.magicSnowfall();
+        this.ui.magicSnowfall(sp.x, sp.y);
         break;
       case 'dance':
         this.particles.burst(p, 10, 0xFFD740);
