@@ -95,9 +95,10 @@ export class Snowman {
     this._eyeL        = null;
     this._eyeR        = null;
     this.allMeshes    = [];
+    this._baseY       = -1.05;
 
     this._build();
-    this.group.position.set(0, -1.05, -3.0);
+    this.group.position.set(0, this._baseY, -3.0);
     scene.add(this.group);
   }
 
@@ -415,10 +416,10 @@ export class Snowman {
 
     // Idle breathing
     if (this.animState === 'idle') {
-      this.group.position.y   = -1.05 + py + Math.sin(t * 1.15) * 0.014;
+      this.group.position.y   = this._baseY + py + Math.sin(t * 1.15) * 0.014;
       this.headGroup.rotation.y = Math.sin(t * 0.55) * 0.055 + hy;
     } else {
-      this.group.position.y   = -1.05 + py;
+      this.group.position.y   = this._baseY + py;
       this.headGroup.rotation.y += hy * 0.06;
     }
     this.headGroup.rotation.x = hx;

@@ -76,7 +76,7 @@ class App {
     on('btn-allow-camera', 'click', () => this.sm.transition(GameState.AR_INIT));
     on('btn-next-quest',   'click', () => { this.ui.hideOverlay('screen-quest-complete'); this._nextQuest(); });
     on('btn-restart',      'click', () => location.reload());
-    on('btn-retry',        'click', () => this.sm.transition(GameState.CAMERA_PROMPT));
+    on('btn-retry',        'click', () => this.sm.transition(GameState.AR_INIT));
     on('btn-fallback-from-error', 'click', () => this.sm.transition(GameState.AR_INIT));
     on('btn-fallback-play',       'click', () => this.sm.transition(GameState.AR_INIT));
 
@@ -375,9 +375,22 @@ class App {
     }
   }
 
+  // ── Snowman screen-space position ───────────────────────────
+  _getSnowmanScreenPos(yOffset = 0.6) {
+    if (!this.character?.group || !this.cam3d) {
+      return { x: window.innerWidth / 2, y: window.innerHeight * 0.4 };
+    }
+    const pos = this.character.group.position.clone();
+    pos.y += yOffset;
+    pos.project(this.cam3d);
+    return {
+      x: (pos.x + 1) / 2 * window.innerWidth,
+      y: (-pos.y + 1) / 2 * window.innerHeight,
+    };
+  }
+
   // ── Action buttons ──────────────────────────────────────────
   _handleAction(action) {
-    // Stop walking, do the animation
     this.walker.stopAndIdle();
     const played = this.character.playAction(action, 'idle', 0.25);
     if (!played) {
@@ -387,9 +400,29 @@ class App {
     this.ui.showSpeech(this.audio.getLine(action));
     this.audio.playSuccess();
 
-    // Particles above head
     const p = this.character.group.position.clone().add(new THREE.Vector3(0, 1.5, -0.3));
-    this.particles.burst(p, action === 'throw' ? 12 : 8, action === 'throw' ? 0xEAF6FF : 0xAAFFCC);
+    const sp = this._getSnowmanScreenPos();
+
+    switch (action) {
+      case 'throw':
+        this.particles.burst(p, 12, 0xEAF6FF);
+        this.ui.throwSnowball(sp.x, sp.y);
+        break;
+      case 'wave':
+        this.particles.burst(p, 10, 0xAAFFEE);
+        this.ui.magicSnowfall();
+        break;
+      case 'dance':
+        this.particles.burst(p, 10, 0xFFD740);
+        this.ui.danceSparkles(sp.x, sp.y);
+        break;
+      case 'sing':
+        this.particles.burst(p, 8, 0xFFAA44);
+        this.ui.singNotes(sp.x, sp.y);
+        break;
+      default:
+        this.particles.burst(p, 8, 0xAAFFCC);
+    }
 
     this._completeTrigger('action_' + action);
   }

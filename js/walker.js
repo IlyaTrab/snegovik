@@ -7,11 +7,15 @@
 
 import * as THREE from 'three';
 
-// World-space movement bounds (must stay on-screen)
+// World-space movement bounds — full visible area at typical snowman depth
 const BOUNDS = {
-  x: [-2.7, 2.7],
-  z: [-8.9, -1.45],
+  x: [-2.2, 2.2],
+  y: [-2.2, 2.0],  // full vertical screen range
+  z: [-8.0, -3.5],
 };
+
+// Camera half-FOV tangent (65° FOV)
+const HALF_FOV_TAN = Math.tan(32.5 * Math.PI / 180);
 
 // How fast the character turns (rad/sec, scales with distance)
 const BASE_TURN_SPEED = 6;
@@ -53,17 +57,22 @@ export class Walker {
     this._char?.playGeneric(run ? 'run' : 'walk', { fade: 0.22 });
   }
 
+  // Map normalised screen coords (NDC) to world position at snowman's depth
   screenToWorld(nx, ny) {
-    const x = THREE.MathUtils.mapLinear(nx, -1, 1, BOUNDS.x[0], BOUNDS.x[1]);
-    const depthLerp = Math.pow(THREE.MathUtils.clamp((1 - ny) * 0.5, 0, 1), 0.78);
-    const z = THREE.MathUtils.lerp(BOUNDS.z[1], BOUNDS.z[0], depthLerp);
-    return new THREE.Vector3(x, this._group.position.y, z);
+    const z      = this._group.position.z;
+    const aspect = window.innerWidth / window.innerHeight;
+    const worldX = THREE.MathUtils.clamp(nx * (-z) * HALF_FOV_TAN * aspect, BOUNDS.x[0], BOUNDS.x[1]);
+    const worldY = THREE.MathUtils.clamp(ny * (-z) * HALF_FOV_TAN,          BOUNDS.y[0], BOUNDS.y[1]);
+    return new THREE.Vector3(worldX, worldY, z);
   }
 
   stopAndIdle() {
     this.state = 'idle';
     this._speed = 0;
-    this._char?.playGeneric('idle', { fade: 0.3 });
+    if (this._char) {
+      this._char.baseY = this._group.position.y;
+      this._char.playGeneric('idle', { fade: 0.3 });
+    }
   }
 
   // Make snowman do a circle dance
@@ -106,13 +115,14 @@ export class Walker {
   _step(dt) {
     const pos = this._group.position;
     const dx  = this._target.x - pos.x;
+    const dy  = this._target.y - pos.y;
     const dz  = this._target.z - pos.z;
-    const dist = Math.sqrt(dx * dx + dz * dz);
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
     if (dist < 0.07) return true; // arrived
 
-    // Turn toward target — faster turn when farther away
-    const targetAngle = Math.atan2(dx, -dz);
+    // Turn toward target (XZ plane only)
+    const targetAngle = Math.atan2(dx, -dz || 0.001);
     let diff = targetAngle - this._group.rotation.y;
     while (diff >  Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;
@@ -122,11 +132,16 @@ export class Walker {
     // Ease speed near arrival
     const speed = Math.min(this._speed, dist / 0.25 * this._speed);
     pos.x += (dx / dist) * speed * dt;
+    pos.y += (dy / dist) * speed * dt;
     pos.z += (dz / dist) * speed * dt;
 
     // Clamp to bounds
     pos.x = Math.max(BOUNDS.x[0], Math.min(BOUNDS.x[1], pos.x));
+    pos.y = Math.max(BOUNDS.y[0], Math.min(BOUNDS.y[1], pos.y));
     pos.z = Math.max(BOUNDS.z[0], Math.min(BOUNDS.z[1], pos.z));
+
+    // Keep character animation base in sync with walker Y
+    if (this._char) this._char.baseY = pos.y;
 
     return false;
   }
@@ -134,21 +149,21 @@ export class Walker {
   _arrive() {
     this.state  = 'idle';
     this._speed = 0;
-    this._char?.playGeneric('idle', { fade: 0.3 });
+    if (this._char) {
+      this._char.baseY = this._group.position.y;
+      this._char.playGeneric('idle', { fade: 0.3 });
+    }
     const cb = this.onArrived;
     this.onArrived = null;
     if (cb) cb();
   }
 
   _wander() {
-    const [xMin, xMax] = BOUNDS.x;
-    const [zMin, zMax] = BOUNDS.z;
     const t = new THREE.Vector3(
-      xMin + Math.random() * (xMax - xMin),
-      this._group.position.y,
-      zMin + Math.random() * (zMax - zMin)
+      BOUNDS.x[0] + Math.random() * (BOUNDS.x[1] - BOUNDS.x[0]),
+      BOUNDS.y[0] + Math.random() * (BOUNDS.y[1] - BOUNDS.y[0]),
+      this._group.position.z  // keep depth fixed
     );
-    // Occasionally run instead of walk
     const shouldRun = Math.random() < 0.2;
     this._target = t;
     this._speed  = shouldRun ? this.RUN_SPEED : this.WALK_SPEED;
@@ -159,8 +174,8 @@ export class Walker {
   _clamp(v) {
     return new THREE.Vector3(
       Math.max(BOUNDS.x[0], Math.min(BOUNDS.x[1], v.x)),
-      this._group.position.y,
-      Math.max(BOUNDS.z[0], Math.min(BOUNDS.z[1], v.z))
+      Math.max(BOUNDS.y[0], Math.min(BOUNDS.y[1], v.y)),
+      this._group.position.z  // keep depth fixed
     );
   }
 }

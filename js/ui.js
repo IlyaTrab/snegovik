@@ -81,14 +81,12 @@ export class UIManager {
 
   updateActionButtons(bindings) {
     if (!bindings) return;
-
     for (const [action, btn] of this._actionButtons.entries()) {
       const binding = bindings[action];
       if (!binding) continue;
-
       btn.disabled = !binding.enabled;
       btn.classList.toggle('is-disabled', !binding.enabled);
-      btn.innerHTML = `${binding.emoji}<br>${binding.label}<span class="action-clip">${binding.displayClip}</span>`;
+      btn.textContent = binding.emoji;
     }
   }
 
@@ -168,5 +166,75 @@ export class UIManager {
 
   spawnCelebration(count = 25) {
     for (let i = 0; i < count; i++) setTimeout(() => this.spawnSnowflake(), i * 70);
+  }
+
+  // ── Action visual effects ───────────────────────────────────
+  throwSnowball(fromX, fromY) {
+    const toX = window.innerWidth  * (0.25 + Math.random() * 0.5);
+    const toY = window.innerHeight * (0.20 + Math.random() * 0.45);
+
+    const ball = document.createElement('div');
+    ball.className = 'snowball-fx';
+    ball.style.left = fromX + 'px';
+    ball.style.top  = fromY + 'px';
+    ball.style.setProperty('--tx', (toX - fromX) + 'px');
+    ball.style.setProperty('--ty', (toY - fromY) + 'px');
+    document.body.appendChild(ball);
+
+    setTimeout(() => {
+      ball.remove();
+      const splat = document.createElement('div');
+      splat.className = 'snowball-splat';
+      splat.textContent = '❄';
+      splat.style.left = toX + 'px';
+      splat.style.top  = toY + 'px';
+      document.body.appendChild(splat);
+      setTimeout(() => splat.remove(), 2000);
+    }, 560);
+  }
+
+  magicSnowfall() {
+    let count = 0;
+    const max = 45;
+    const iv = setInterval(() => {
+      this.spawnSnowflake();
+      if (++count >= max) clearInterval(iv);
+    }, 70);
+  }
+
+  danceSparkles(cx, cy) {
+    const emojis = ['✨', '⭐', '💫', '🌟', '🎉', '🎊', '🌈'];
+    for (let i = 0; i < 14; i++) {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        el.className = 'dance-sparkle';
+        el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        const angle = (i / 14) * Math.PI * 2 + Math.random() * 0.4;
+        const dist  = 55 + Math.random() * 90;
+        el.style.left = cx + 'px';
+        el.style.top  = cy + 'px';
+        el.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+        el.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1000);
+      }, i * 55);
+    }
+  }
+
+  singNotes(cx, cy) {
+    const notes = ['♩', '♪', '♫', '♬', '🎵', '🎶'];
+    for (let i = 0; i < 9; i++) {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        el.className = 'sing-note';
+        el.textContent = notes[Math.floor(Math.random() * notes.length)];
+        const offsetX = (Math.random() - 0.5) * 110;
+        el.style.left = cx + 'px';
+        el.style.top  = cy + 'px';
+        el.style.setProperty('--tx', offsetX + 'px');
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1500);
+      }, i * 110);
+    }
   }
 }

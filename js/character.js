@@ -130,6 +130,7 @@ class ProceduralCharacterAdapter {
   }
 
   update(dt) {
+    if (this._snowman) this._snowman._baseY = this.baseY;
     this._snowman?.update(dt);
   }
 

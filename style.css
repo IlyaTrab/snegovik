@@ -194,7 +194,7 @@ p {
 /* ── Hint bar ────────────────────────────────────────────── */
 #hint-bar {
   position: absolute;
-  bottom: 168px; left: 50%;
+  bottom: 80px; left: 50%;
   transform: translateX(-50%);
   background: var(--glass);
   backdrop-filter: blur(16px);
@@ -214,7 +214,7 @@ p {
 /* ── Speech bubble ───────────────────────────────────────── */
 #speech-bubble {
   position: absolute;
-  bottom: 224px; left: 50%;
+  bottom: 118px; left: 50%;
   transform: translateX(-50%);
   background: #fff;
   color: #1A237E;
@@ -240,56 +240,45 @@ p {
 /* ── Action buttons ──────────────────────────────────────── */
 #action-buttons {
   position: absolute;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
-  left: 14px;
-  right: 14px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin: 0 auto;
-  max-width: min(420px, calc(100vw - 28px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
   pointer-events: all;
+  z-index: 12;
 }
 .action-btn {
   background: var(--glass);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1.5px solid rgba(255,255,255,0.20);
-  color: #fff; border-radius: 18px;
-  padding: 10px 8px; font-size: 14px; font-weight: 900;
-  cursor: pointer; width: 100%; min-height: 72px;
-  line-height: 1.35;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+  color: #fff;
+  border-radius: 50%;
+  width: 54px; height: 54px;
+  font-size: 26px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.10);
   transition: transform 0.12s, background 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
 }
-.action-btn:nth-child(1) { border-color: rgba(255,105,180,0.4); }
-.action-btn:nth-child(2) { border-color: rgba(77,208,225,0.4);  }
-.action-btn:nth-child(3) { border-color: rgba(105,240,174,0.4); }
-.action-btn:nth-child(4) { border-color: rgba(255,255,255,0.34); }
+.action-btn:nth-child(1) { border-color: rgba(255,105,180,0.5); }
+.action-btn:nth-child(2) { border-color: rgba(77,208,225,0.5);  }
+.action-btn:nth-child(3) { border-color: rgba(105,240,174,0.5); }
+.action-btn:nth-child(4) { border-color: rgba(200,220,255,0.5); }
 .action-btn:active {
-  transform: scale(0.88);
-  background: rgba(66,165,245,0.22);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 20px rgba(66,165,245,0.3);
+  transform: scale(0.84);
+  background: rgba(66,165,245,0.28);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 20px rgba(66,165,245,0.4);
 }
-
-.action-btn:disabled {
-  pointer-events: none;
-  cursor: default;
-}
-
+.action-btn:disabled { pointer-events: none; cursor: default; }
 .action-btn.is-disabled {
-  opacity: 0.45;
-  filter: grayscale(0.15);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+  opacity: 0.40;
+  filter: grayscale(0.2);
 }
-
-.action-clip {
-  display: block;
-  margin-top: 3px;
-  font-size: 10px;
-  font-weight: 800;
-  color: rgba(255,255,255,0.68);
-}
+.action-clip { display: none; }
 
 /* ── Quest complete overlay ──────────────────────────────── */
 .overlay {
@@ -415,7 +404,7 @@ p {
 /* ── Walk tip ────────────────────────────────────────────── */
 #walk-tip {
   position: absolute;
-  bottom: 138px; left: 50%;
+  bottom: 70px; left: 50%;
   transform: translateX(-50%);
   font-size: 12px; font-weight: 700;
   color: rgba(255,255,255,0.38);
@@ -424,43 +413,91 @@ p {
   letter-spacing: 0.2px;
 }
 
-@media (min-width: 700px) {
-  #action-buttons {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    max-width: 620px;
-  }
-}
-
 @media (max-width: 430px) {
   #quest-panel {
     width: min(50vw, 214px);
     padding: 12px 14px;
   }
-
-  #score-bar {
-    padding: 10px 16px;
-  }
-
+  #score-bar { padding: 10px 16px; }
   #hint-bar {
-    bottom: 154px;
+    bottom: 80px;
     max-width: calc(100vw - 34px);
     padding: 11px 18px;
     font-size: 14px;
     white-space: normal;
     text-align: center;
   }
-
   #speech-bubble {
-    bottom: 210px;
+    bottom: 118px;
     max-width: calc(100vw - 56px);
   }
-
   #walk-tip {
-    bottom: 122px;
+    bottom: 70px;
     max-width: calc(100vw - 32px);
     white-space: normal;
     text-align: center;
   }
+}
+
+/* ── Action visual effects ───────────────────────────────── */
+.snowball-fx {
+  position: fixed;
+  width: 26px; height: 26px;
+  background: radial-gradient(circle, #fff 55%, #c8e8ff 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 14px rgba(200,235,255,0.9);
+  pointer-events: none; z-index: 200;
+  transform: translate(-50%, -50%);
+  animation: snowballFly var(--dur, 0.55s) cubic-bezier(0.2,0,0.8,1) forwards;
+}
+@keyframes snowballFly {
+  0%   { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.8); opacity: 0; }
+}
+
+.snowball-splat {
+  position: fixed;
+  pointer-events: none; z-index: 200;
+  transform: translate(-50%, -50%);
+  font-size: 56px; line-height: 1;
+  animation: splatBurst 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards, splatFade 1.2s ease 0.5s forwards;
+  filter: drop-shadow(0 0 10px rgba(180,220,255,0.85));
+}
+@keyframes splatBurst {
+  from { transform: translate(-50%,-50%) scale(0) rotate(-30deg); }
+  to   { transform: translate(-50%,-50%) scale(1) rotate(0deg); }
+}
+@keyframes splatFade {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.dance-sparkle {
+  position: fixed;
+  pointer-events: none; z-index: 200;
+  font-size: 22px; line-height: 1;
+  transform: translate(-50%, -50%);
+  animation: sparkleOut 0.85s ease-out forwards;
+}
+@keyframes sparkleOut {
+  0%   { transform: translate(-50%,-50%) scale(0.4); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.1); opacity: 0; }
+}
+
+.sing-note {
+  position: fixed;
+  pointer-events: none; z-index: 200;
+  font-size: 24px; font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255,210,80,0.9);
+  transform: translateX(-50%);
+  animation: noteFloat 1.3s ease-out forwards;
+}
+@keyframes noteFloat {
+  0%   { transform: translateX(calc(-50% + var(--tx))) translateY(0) scale(0.7); opacity: 1; }
+  60%  { opacity: 1; }
+  100% { transform: translateX(calc(-50% + var(--tx))) translateY(-90px) scale(1.2); opacity: 0; }
 }
 
 /* ── Utility ─────────────────────────────────────────────── */
