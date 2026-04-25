@@ -272,7 +272,7 @@ export class UIManager {
         const size = 22 + Math.random() * 36;
         el.style.fontSize = size + 'px';
         const dur = 0.9 + Math.random() * 1.0;
-        el.style.setProperty('--angle', (Math.random() * 50 - 25) + 'deg');
+        el.style.setProperty('--drift', (Math.random() * 80 - 40) + 'px');
         el.style.animationDuration = dur + 's';
         document.body.appendChild(el);
         setTimeout(() => el.remove(), dur * 1000 + 200);

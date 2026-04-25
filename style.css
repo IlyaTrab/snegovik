@@ -515,8 +515,8 @@ p {
   animation: blizzardFall linear forwards;
 }
 @keyframes blizzardFall {
-  from { transform: translateY(0)      translateX(0)   rotate(0deg); }
-  to   { transform: translateY(115vh)  translateX(calc(var(--angle,0deg) * 1px)) rotate(720deg); opacity: 0.1; }
+  from { transform: translateY(0)     translateX(0)              rotate(0deg); }
+  to   { transform: translateY(115vh) translateX(var(--drift,0px)) rotate(720deg); opacity: 0.1; }
 }
 
 /* ── Magic wand ──────────────────────────────────────────── */
