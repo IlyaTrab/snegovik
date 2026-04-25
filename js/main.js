@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 import { StateMachine, GameState } from './state.js?v=20260425e';
 import { CameraManager }           from './camera.js?v=20260425e';
-import { Character, ProceduralCharacterAdapter } from './character.js?v=20260425e';
+import { Character, ProceduralCharacterAdapter, CHARACTER_CONFIGS } from './character.js?v=20260425e';
 import { Walker }                  from './walker.js?v=20260425e';
 import { SnowParticles }           from './particles.js?v=20260425e';
 import { Star }                    from './star.js?v=20260425e';
@@ -26,6 +26,13 @@ class App {
     this.particles = null;
     this.questMgr  = null;
     this.activeStar = null;
+
+    // Character state
+    this._currentCharId  = 'snowman';
+    this._isSwitching    = false;
+    this._dualMode       = false;
+    this._secondCharId   = null;
+    this._secondCharacter = null;
 
     // Three.js
     this.renderer = null;
@@ -80,12 +87,29 @@ class App {
     on('btn-fallback-from-error', 'click', () => this.sm.transition(GameState.AR_INIT));
     on('btn-fallback-play',       'click', () => this.sm.transition(GameState.AR_INIT));
 
+    // Action buttons
     document.querySelectorAll('.action-btn').forEach(btn => {
       btn.addEventListener('click', e => {
         if (!this.sm.isAny(GameState.AR_ACTIVE, GameState.QUEST_ACTIVE)) return;
         this.audio.resume();
         this._handleAction(e.currentTarget.dataset.action);
       });
+    });
+
+    // Character switcher buttons
+    document.querySelectorAll('.char-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!this.sm.isAny(GameState.AR_ACTIVE, GameState.QUEST_ACTIVE)) return;
+        this.audio.resume();
+        this._switchCharacter(btn.dataset.char);
+      });
+    });
+
+    // Dual mode toggle
+    on('btn-dual-mode', 'click', () => {
+      if (!this.sm.isAny(GameState.AR_ACTIVE, GameState.QUEST_ACTIVE)) return;
+      this.audio.resume();
+      this._toggleDualMode();
     });
 
     // Canvas — tap/hold/double-tap
@@ -114,7 +138,6 @@ class App {
     if (window.DeviceOrientationEvent) {
       window.addEventListener('deviceorientation', e => {
         if (this.character) {
-          // Subtle lean on tilt
           this.character.group.rotation.z = ((e.gamma || 0) * Math.PI / 180) * 0.04;
         }
       }, { passive: true });
@@ -151,7 +174,7 @@ class App {
     } catch (err) {
       console.error('[AR] Scene build failed:', err);
       this.sm.transition(GameState.ERROR, {
-        title: 'Не удалось загрузить снеговика',
+        title: 'Не удалось загрузить персонажа',
         msg: 'Камера работает, но модель или анимации не загрузились. Проверь `.glb` и попробуй снова.',
       });
       return;
@@ -208,13 +231,14 @@ class App {
   }
 
   async _buildScene() {
-    // Load character
+    const config = CHARACTER_CONFIGS[this._currentCharId];
+
     this.character = new Character();
     this.character.onStatusChange = status => this.ui.updateAnimationStatus(status);
     this.character.onActionBindingsChange = bindings => this.ui.updateActionButtons(bindings);
 
     try {
-      await this.character.load(this.scene);
+      await this.character.load(this.scene, config.url);
     } catch (err) {
       console.warn('[AR] GLB load failed, falling back to procedural snowman.', err);
       this.character = new ProceduralCharacterAdapter();
@@ -224,10 +248,12 @@ class App {
       this.ui.showSpeech('GLB не загрузился, показываю встроенного снеговика.', 3200);
     }
 
-    // Position character using fitted bounds so different GLBs stay in-frame.
     const placement = this.character.getRecommendedPlacement(this.cam3d, -1.2);
     this.character.group.position.set(placement.x, placement.y, placement.z);
     this.character.baseY = placement.y;
+
+    this.ui.setCharacterButtons(config.actionMeta);
+    this.ui.updateCharacterSwitcher(this._currentCharId);
     this.ui.updateActionButtons(this.character.getActionBindings());
     this.ui.updateAnimationStatus(this.character.getAnimationStatus());
 
@@ -259,6 +285,129 @@ class App {
     this._sfGeo  = sfGeo;
   }
 
+  // ── Character switching ─────────────────────────────────────
+  async _switchCharacter(id) {
+    if (this._isSwitching) return;
+    if (id === this._currentCharId && !this._dualMode) {
+      this.ui.updateCharacterSwitcher(id);
+      return;
+    }
+
+    this._isSwitching = true;
+    const config = CHARACTER_CONFIGS[id];
+    this.ui.showSpeech(`${config.emoji} Загружаю...`, 5000);
+
+    // Stash old character reference (don't remove from scene yet)
+    const oldChar = this.character;
+
+    try {
+      const newChar = new Character();
+      newChar.onStatusChange = s => this.ui.updateAnimationStatus(s);
+      newChar.onActionBindingsChange = () => {}; // suppress during load
+
+      await newChar.load(this.scene, config.url);
+
+      // Apply deer-specific rotation fix (body runs along X, rotate to face camera)
+      if (id === 'deer') {
+        newChar.group.rotation.y = Math.PI / 2;
+      }
+
+      // Now swap: remove old, keep new
+      if (oldChar) this.scene.remove(oldChar.group);
+      this.character = newChar;
+      this._currentCharId = id;
+
+      // Wire up live callbacks
+      this.character.onActionBindingsChange = b => this.ui.updateActionButtons(b);
+
+      this._applyCharacterPositions();
+      this.walker.updateCharacter(this.character.group, this.character);
+      this.ui.setCharacterButtons(config.actionMeta);
+      this.ui.updateCharacterSwitcher(id);
+
+      this.character.playOnce('happy', 'idle', 0.3);
+      this.ui.showSpeech(config.greetLine, 2800);
+      this.audio.playSuccess();
+
+    } catch (err) {
+      console.error('[Switch] Load failed:', err);
+      this.ui.showSpeech('Не удалось загрузить модель 😢', 2500);
+      // Restore old character if it was removed
+      if (oldChar && !this.scene.children.includes(oldChar.group)) {
+        this.scene.add(oldChar.group);
+      }
+    } finally {
+      this._isSwitching = false;
+    }
+  }
+
+  // ── Dual mode ───────────────────────────────────────────────
+  async _toggleDualMode() {
+    if (this._isSwitching) return;
+
+    if (this._dualMode) {
+      // Turn off
+      this._dualMode = false;
+      this.ui.setDualModeActive(false);
+      if (this._secondCharacter) {
+        this.scene.remove(this._secondCharacter.group);
+        this._secondCharacter = null;
+        this._secondCharId = null;
+      }
+      this._applyCharacterPositions();
+      return;
+    }
+
+    // Turn on — pick secondary character
+    const ids = Object.keys(CHARACTER_CONFIGS);
+    const primaryIdx = ids.indexOf(this._currentCharId);
+    this._secondCharId = ids[(primaryIdx + 1) % ids.length];
+    const cfg2 = CHARACTER_CONFIGS[this._secondCharId];
+
+    this._isSwitching = true;
+    this.ui.showSpeech(`${cfg2.emoji} Загружаю...`, 5000);
+
+    try {
+      const char2 = new Character();
+      char2.onStatusChange = () => {};
+      char2.onActionBindingsChange = () => {};
+      await char2.load(this.scene, cfg2.url);
+
+      if (this._secondCharId === 'deer') char2.group.rotation.y = Math.PI / 2;
+
+      this._secondCharacter = char2;
+      this._dualMode = true;
+      this.ui.setDualModeActive(true);
+      this._applyCharacterPositions();
+      this.ui.showSpeech(`${CHARACTER_CONFIGS[this._currentCharId].emoji} + ${cfg2.emoji} Двойная команда!`, 3000);
+      this.audio.playSuccess();
+    } catch (err) {
+      console.error('[Dual] Secondary load failed:', err);
+      this._secondCharId = null;
+      this.ui.showSpeech('Не удалось загрузить второго персонажа 😢', 2500);
+    } finally {
+      this._isSwitching = false;
+    }
+  }
+
+  _applyCharacterPositions() {
+    const floorY = -1.2;
+    if (this._dualMode && this._secondCharacter) {
+      // Side by side
+      const p1 = this.character.getRecommendedPlacement(this.cam3d, floorY);
+      this.character.group.position.set(-0.5, p1.y, p1.z);
+      this.character.baseY = p1.y;
+
+      const p2 = this._secondCharacter.getRecommendedPlacement(this.cam3d, floorY);
+      this._secondCharacter.group.position.set(0.5, p2.y, p2.z);
+      this._secondCharacter.baseY = p2.y;
+    } else {
+      const p = this.character.getRecommendedPlacement(this.cam3d, floorY);
+      this.character.group.position.set(p.x, p.y, p.z);
+      this.character.baseY = p.y;
+    }
+  }
+
   _startRenderLoop() {
     const animate = () => {
       requestAnimationFrame(animate);
@@ -266,6 +415,7 @@ class App {
 
       if (this.walker)    this.walker.update(dt);
       if (this.character) this.character.update(dt, this.walker?.isMoving, this.walker?.smoothSpeed);
+      if (this._secondCharacter) this._secondCharacter.update(dt, false, 0);
       if (this.particles) this.particles.update(dt);
       if (this.activeStar) {
         this.activeStar.update(dt);
@@ -321,10 +471,18 @@ class App {
       }
     }
 
-    // Check character tap
-    const charHits = this._rc.intersectObjects(this.character.getMeshes());
+    // Check character tap (primary + secondary in dual mode)
+    const charMeshes = this.character.getMeshes();
+    const secondMeshes = this._secondCharacter?.getMeshes() || [];
+    const allMeshes = [...charMeshes, ...secondMeshes];
+
+    const charHits = this._rc.intersectObjects(allMeshes);
     if (charHits.length) {
-      this._onCharTap(charHits[0].point);
+      // Determine which character was hit
+      const hitObj = charHits[0].object;
+      const hitSecond = this._secondCharacter && secondMeshes.includes(hitObj);
+      const hitChar = hitSecond ? this._secondCharacter : this.character;
+      this._onCharTap(charHits[0].point, hitChar);
       return;
     }
 
@@ -332,24 +490,29 @@ class App {
     if (walkTarget) this._onFloorTap(walkTarget);
   }
 
-  _onCharTap(hitPoint) {
+  _onCharTap(hitPoint, tappedChar = null) {
+    const char = tappedChar || this.character;
     const now  = Date.now();
     const dbl  = (now - this._lastTapTime) < DBL_TAP_MS;
     this._lastTapTime = now;
 
-    this.character.tap();
+    char.tap();
     this.particles.burst(hitPoint, 10);
 
-    // Quest triggers
-    if (dbl) {
-      this._completeTrigger('double_tap');
-    } else if (this.walker?.isMoving) {
-      this._completeTrigger('tap_while_walk');
+    if (char === this.character) {
+      if (dbl) {
+        this._completeTrigger('double_tap');
+      } else if (this.walker?.isMoving) {
+        this._completeTrigger('tap_while_walk');
+      } else {
+        this._completeTrigger('tap_body');
+      }
+      char.playOnce('surprised', 'idle');
     } else {
-      this._completeTrigger('tap_body');
+      // Secondary character: just react
+      char.playOnce('wave', 'idle');
     }
 
-    this.character.playOnce('surprised', 'idle');
     this.ui.showSpeech(this.audio.getLine('tap'));
   }
 
@@ -358,7 +521,7 @@ class App {
     const dbl = (now - this._lastTapTime) < DBL_TAP_MS;
     this._lastTapTime = now;
 
-    this.walker.walkTo(worldPt, dbl); // double-tap = run
+    this.walker.walkTo(worldPt, dbl);
     this._completeTrigger('walk_to');
   }
 
@@ -392,39 +555,89 @@ class App {
   // ── Action buttons ──────────────────────────────────────────
   _handleAction(action) {
     this.walker.stopAndIdle();
-    const played = this.character.playAction(action, 'idle', 0.25);
+
+    const charConf  = CHARACTER_CONFIGS[this._currentCharId];
+    const actionConf = charConf?.actionMeta[action];
+    const animKey   = actionConf?.animKey ?? action;
+    const effect    = actionConf?.effect  ?? action;
+
+    // Try to play model animation
+    let played = this.character.playOnce(animKey, 'idle', 0.25);
+
     if (!played) {
-      this.ui.showSpeech('У этой модели пока нет отдельной анимации для кнопки.');
-      return;
+      if (charConf?.procedural) {
+        // Procedural animation for models without GLB animations (e.g. deer)
+        this.character.playProceduralAction(effect, 2200);
+        played = true;
+      } else {
+        this.ui.showSpeech('У этой модели пока нет анимации для кнопки.');
+        return;
+      }
     }
+
     this.ui.showSpeech(this.audio.getLine(action));
     this.audio.playSuccess();
 
-    const p = this.character.group.position.clone().add(new THREE.Vector3(0, 1.5, -0.3));
+    const p  = this.character.group.position.clone().add(new THREE.Vector3(0, 1.5, -0.3));
     const sp = this._getSnowmanScreenPos();
+    this._triggerEffect(effect, p, sp);
+    this._completeTrigger('action_' + action);
 
-    switch (action) {
-      case 'throw':
-        this.particles.burst(p, 12, 0xEAF6FF);
-        this.ui.throwSnowball(sp.x, sp.y);
-        break;
-      case 'wave':
-        this.particles.burst(p, 10, 0xAAFFEE);
-        this.ui.magicSnowfall(sp.x, sp.y);
-        break;
+    // Secondary character reacts too if dual mode
+    if (this._dualMode && this._secondCharacter) {
+      setTimeout(() => this._secondCharacter.playOnce('wave', 'idle', 0.2), 400);
+    }
+  }
+
+  _triggerEffect(effect, p3d, sp) {
+    switch (effect) {
       case 'dance':
-        this.particles.burst(p, 10, 0xFFD740);
+        this.particles.burst(p3d, 10, 0xFFD740);
         this.ui.danceSparkles(sp.x, sp.y);
         break;
       case 'sing':
-        this.particles.burst(p, 8, 0xFFAA44);
+        this.particles.burst(p3d, 8, 0xFFAA44);
         this.ui.singNotes(sp.x, sp.y);
         break;
+      case 'magic':
+        this.particles.burst(p3d, 10, 0xAAFFEE);
+        this.ui.magicSnowfall(sp.x, sp.y);
+        break;
+      case 'throw':
+        this.particles.burst(p3d, 12, 0xEAF6FF);
+        this.ui.throwSnowball(sp.x, sp.y);
+        break;
+      case 'greet':
+        this.particles.burst(p3d, 12, 0xFFD700);
+        this.ui.santaGreeting(sp.x, sp.y);
+        break;
+      case 'gift':
+        this.particles.burst(p3d, 14, 0xFF6B9D);
+        this.ui.giftFly(sp.x, sp.y);
+        break;
+      case 'xmastree':
+        this.particles.burst(p3d, 16, 0x4CAF50);
+        this.ui.christmasTree(sp.x, sp.y);
+        break;
+      case 'gallop':
+        this.particles.burst(p3d, 10, 0xFFD740);
+        this.ui.deerGallop(sp.x, sp.y);
+        break;
+      case 'bells':
+        this.particles.burst(p3d, 8, 0xFFD700);
+        this.ui.deerBells(sp.x, sp.y);
+        break;
+      case 'shine':
+        this.particles.burst(p3d, 12, 0xFFEE00);
+        this.ui.deerShine(sp.x, sp.y);
+        break;
+      case 'deerJump':
+        this.particles.burst(p3d, 10, 0xAAFFFF);
+        this.ui.deerJump(sp.x, sp.y);
+        break;
       default:
-        this.particles.burst(p, 8, 0xAAFFCC);
+        this.particles.burst(p3d, 8, 0xAAFFCC);
     }
-
-    this._completeTrigger('action_' + action);
   }
 
   // ── Quest logic ─────────────────────────────────────────────
@@ -438,11 +651,9 @@ class App {
     this.ui.updateCombo(combo);
     this.audio.playSuccess();
 
-    // Celebration particles
     const p = this.character.group.position.clone().add(new THREE.Vector3(0, 1.5, -0.3));
     this.particles.starBurst(p);
 
-    // Special combo milestone celebration
     if (isComboMilestone) {
       this.audio.playReward();
       this.character.playOnce('happy', 'idle', 0.2);
@@ -470,7 +681,6 @@ class App {
     this.ui.setHint(quest.hint);
     this.ui.showSpeech(this.audio.getLine('questStart'));
 
-    // Spawn star if it's a catch_star quest
     if (quest.id === 'catch_star') {
       if (this.activeStar) this.activeStar.collect(false);
       this.activeStar = new Star(this.scene, this.character.group.position);
