@@ -793,19 +793,19 @@ p {
 /* ── Santa: gift fly ─────────────────────────────────────── */
 .gift-fly {
   position: fixed; pointer-events: none; z-index: 620;
-  font-size: 52px; line-height: 1;
+  font-size: 58px; line-height: 1;
   transform: translate(-50%, -50%);
-  filter: drop-shadow(0 6px 18px rgba(255,80,120,0.7));
-  animation: giftArcIn 0.7s cubic-bezier(0.34,1.56,0.64,1),
-             giftLand 0.3s ease 0.7s both,
-             giftFade 0.5s ease 2.8s forwards;
+  filter: drop-shadow(0 6px 24px rgba(255,80,120,0.85));
+  animation: giftArcIn 0.65s cubic-bezier(0.34,1.56,0.64,1),
+             giftLand 0.35s ease 0.65s both,
+             giftFade 0.5s ease 2.5s forwards;
 }
 @keyframes giftArcIn {
-  0%   { transform: translate(calc(-50% - 120px), calc(-50% - 80px)) scale(0.3) rotate(-40deg); opacity:0; }
+  0%   { transform: translate(var(--gx, -120px), var(--gy, -80px)) scale(0.2) rotate(-60deg); opacity:0; }
   100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity:1; }
 }
-@keyframes giftLand  { 0%,100% { transform: translate(-50%,-50%) scale(1); } 50% { transform: translate(-50%,-40%) scale(1.15); } }
-@keyframes giftFade  { to { opacity:0; transform: translate(-50%,-70%) scale(0.7); } }
+@keyframes giftLand  { 0%,100% { transform: translate(-50%,-50%) scale(1); } 50% { transform: translate(-50%,-35%) scale(1.25) rotate(5deg); } }
+@keyframes giftFade  { to { opacity:0; transform: translate(-50%,-80%) scale(0.6) rotate(20deg); } }
 
 .gift-confetti {
   position: fixed; pointer-events: none; z-index: 619;

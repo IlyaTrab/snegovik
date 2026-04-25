@@ -294,91 +294,100 @@ class App {
     }
 
     this._isSwitching = true;
-
-    // Remove old character from scene
-    if (this.character) {
-      this.scene.remove(this.character.group);
-    }
-
     const config = CHARACTER_CONFIGS[id];
-    const newChar = new Character();
-    newChar.onStatusChange = s => this.ui.updateAnimationStatus(s);
-    newChar.onActionBindingsChange = b => this.ui.updateActionButtons(b);
+    this.ui.showSpeech(`${config.emoji} Загружаю...`, 5000);
+
+    // Stash old character reference (don't remove from scene yet)
+    const oldChar = this.character;
 
     try {
+      const newChar = new Character();
+      newChar.onStatusChange = s => this.ui.updateAnimationStatus(s);
+      newChar.onActionBindingsChange = () => {}; // suppress during load
+
       await newChar.load(this.scene, config.url);
+
+      // Apply deer-specific rotation fix (body runs along X, rotate to face camera)
+      if (id === 'deer') {
+        newChar.group.rotation.y = Math.PI / 2;
+      }
+
+      // Now swap: remove old, keep new
+      if (oldChar) this.scene.remove(oldChar.group);
+      this.character = newChar;
+      this._currentCharId = id;
+
+      // Wire up live callbacks
+      this.character.onActionBindingsChange = b => this.ui.updateActionButtons(b);
+
+      this._applyCharacterPositions();
+      this.walker.updateCharacter(this.character.group, this.character);
+      this.ui.setCharacterButtons(config.actionMeta);
+      this.ui.updateCharacterSwitcher(id);
+
+      this.character.playOnce('happy', 'idle', 0.3);
+      this.ui.showSpeech(config.greetLine, 2800);
+      this.audio.playSuccess();
+
     } catch (err) {
-      console.warn('[Switch] Load failed, restoring previous character.', err);
-      if (this.character) this.scene.add(this.character.group);
-      this.ui.showSpeech('Не удалось загрузить модель.', 2500);
+      console.error('[Switch] Load failed:', err);
+      this.ui.showSpeech('Не удалось загрузить модель 😢', 2500);
+      // Restore old character if it was removed
+      if (oldChar && !this.scene.children.includes(oldChar.group)) {
+        this.scene.add(oldChar.group);
+      }
+    } finally {
       this._isSwitching = false;
-      return;
     }
-
-    this.character = newChar;
-    this._currentCharId = id;
-
-    // Position characters (respects dual mode)
-    this._applyCharacterPositions();
-
-    // Update walker to follow new character
-    this.walker.updateCharacter(this.character.group, this.character);
-
-    // Apply per-character action button styles
-    this.ui.setCharacterButtons(config.actionMeta);
-    this.ui.updateCharacterSwitcher(id);
-
-    // Greet
-    this.character.playOnce('happy', 'idle', 0.3);
-    this.ui.showSpeech(config.greetLine, 2800);
-    this.audio.playSuccess();
-
-    this._isSwitching = false;
   }
 
   // ── Dual mode ───────────────────────────────────────────────
   async _toggleDualMode() {
     if (this._isSwitching) return;
-    this._dualMode = !this._dualMode;
-    this.ui.setDualModeActive(this._dualMode);
 
     if (this._dualMode) {
-      // Pick a secondary character (next in cycle from primary)
-      const ids = Object.keys(CHARACTER_CONFIGS);
-      const primaryIdx = ids.indexOf(this._currentCharId);
-      this._secondCharId = ids[(primaryIdx + 1) % ids.length];
-
-      this._isSwitching = true;
-      const cfg2 = CHARACTER_CONFIGS[this._secondCharId];
-      const char2 = new Character();
-      char2.onStatusChange = () => {};
-      char2.onActionBindingsChange = () => {};
-
-      try {
-        await char2.load(this.scene, cfg2.url);
-      } catch (err) {
-        console.warn('[Dual] Secondary load failed.', err);
-        this._dualMode = false;
-        this.ui.setDualModeActive(false);
-        this.ui.showSpeech('Не удалось загрузить второго персонажа.', 2500);
-        this._isSwitching = false;
-        return;
-      }
-
-      this._secondCharacter = char2;
-      this._isSwitching = false;
-
-      this.ui.showSpeech(`${CHARACTER_CONFIGS[this._currentCharId].emoji} + ${cfg2.emoji} Двойная команда!`, 3000);
-    } else {
-      // Remove second character
+      // Turn off
+      this._dualMode = false;
+      this.ui.setDualModeActive(false);
       if (this._secondCharacter) {
         this.scene.remove(this._secondCharacter.group);
         this._secondCharacter = null;
         this._secondCharId = null;
       }
+      this._applyCharacterPositions();
+      return;
     }
 
-    this._applyCharacterPositions();
+    // Turn on — pick secondary character
+    const ids = Object.keys(CHARACTER_CONFIGS);
+    const primaryIdx = ids.indexOf(this._currentCharId);
+    this._secondCharId = ids[(primaryIdx + 1) % ids.length];
+    const cfg2 = CHARACTER_CONFIGS[this._secondCharId];
+
+    this._isSwitching = true;
+    this.ui.showSpeech(`${cfg2.emoji} Загружаю...`, 5000);
+
+    try {
+      const char2 = new Character();
+      char2.onStatusChange = () => {};
+      char2.onActionBindingsChange = () => {};
+      await char2.load(this.scene, cfg2.url);
+
+      if (this._secondCharId === 'deer') char2.group.rotation.y = Math.PI / 2;
+
+      this._secondCharacter = char2;
+      this._dualMode = true;
+      this.ui.setDualModeActive(true);
+      this._applyCharacterPositions();
+      this.ui.showSpeech(`${CHARACTER_CONFIGS[this._currentCharId].emoji} + ${cfg2.emoji} Двойная команда!`, 3000);
+      this.audio.playSuccess();
+    } catch (err) {
+      console.error('[Dual] Secondary load failed:', err);
+      this._secondCharId = null;
+      this.ui.showSpeech('Не удалось загрузить второго персонажа 😢', 2500);
+    } finally {
+      this._isSwitching = false;
+    }
   }
 
   _applyCharacterPositions() {

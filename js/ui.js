@@ -442,61 +442,140 @@ export class UIManager {
 
   // ── Santa: gift throw ───────────────────────────────────────
   giftFly(cx, cy) {
-    const gift = document.createElement('div');
-    gift.className = 'gift-fly';
-    gift.textContent = '🎁';
-    gift.style.left = cx + 'px';
-    gift.style.top  = cy + 'px';
-    document.body.appendChild(gift);
-    setTimeout(() => gift.remove(), 3400);
+    // Big "ПОДАРОК!" label
+    const label = document.createElement('div');
+    label.className = 'greet-bubble';
+    label.style.left = cx + 'px';
+    label.style.top  = (cy - 110) + 'px';
+    label.style.fontSize = '32px';
+    label.style.background = 'linear-gradient(135deg,#e91e63,#ff5722)';
+    label.textContent = '🎁 ПОДАРОК!';
+    document.body.appendChild(label);
+    setTimeout(() => label.remove(), 3000);
 
-    // Confetti burst after landing
-    const items = ['⭐', '🌟', '💫', '❤️', '🎉', '✨', '💝'];
-    for (let i = 0; i < 18; i++) {
+    // Multiple gifts flying in from edges
+    const origins = [
+      { x: -80, y: window.innerHeight * 0.3 },
+      { x: window.innerWidth + 80, y: window.innerHeight * 0.2 },
+      { x: window.innerWidth * 0.5, y: -80 },
+    ];
+    origins.forEach((from, idx) => {
+      setTimeout(() => {
+        const gift = document.createElement('div');
+        gift.className = 'gift-fly';
+        gift.textContent = ['🎁','🎀','🎊'][idx];
+        gift.style.left = from.x + 'px';
+        gift.style.top  = from.y + 'px';
+        gift.style.setProperty('--gx', (cx - from.x) + 'px');
+        gift.style.setProperty('--gy', (cy - from.y) + 'px');
+        document.body.appendChild(gift);
+        setTimeout(() => gift.remove(), 2800);
+      }, idx * 200);
+    });
+
+    // Massive confetti burst after landing
+    const items = ['⭐','🌟','💫','❤️','🎉','✨','💝','🎊','💕','🎈'];
+    for (let i = 0; i < 28; i++) {
       setTimeout(() => {
         const el = document.createElement('div');
         el.className = 'gift-confetti';
         el.textContent = items[Math.floor(Math.random() * items.length)];
         el.style.left = cx + 'px';
         el.style.top  = cy + 'px';
-        el.style.fontSize = (14 + Math.random() * 16) + 'px';
-        const angle = (i / 18) * Math.PI * 2;
-        const dist  = 60 + Math.random() * 110;
+        el.style.fontSize = (16 + Math.random() * 22) + 'px';
+        const angle = (i / 28) * Math.PI * 2;
+        const dist  = 80 + Math.random() * 150;
         el.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
         el.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
         el.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
         document.body.appendChild(el);
-        setTimeout(() => el.remove(), 1400);
-      }, 700 + i * 40);
+        setTimeout(() => el.remove(), 1600);
+      }, 600 + i * 35);
     }
   }
 
   // ── Santa: christmas tree ───────────────────────────────────
   christmasTree(cx, cy) {
+    // Screen green flash
+    const flash = document.createElement('div');
+    flash.className = 'shine-flash';
+    flash.style.background = 'radial-gradient(circle at 50% 60%, rgba(0,200,60,0.25) 0%, transparent 65%)';
+    flash.style.setProperty('--ox', '50%');
+    flash.style.setProperty('--oy', '60%');
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 900);
+
+    // Giant tree grows from bottom
     const tree = document.createElement('div');
     tree.className = 'xmas-tree';
     tree.textContent = '🎄';
     tree.style.left = cx + 'px';
-    tree.style.top  = cy + 'px';
+    tree.style.top  = (cy + 20) + 'px';
     document.body.appendChild(tree);
-    setTimeout(() => tree.remove(), 4400);
+    setTimeout(() => tree.remove(), 5000);
 
-    // Blinking lights
-    const colors = ['#FF0000','#FFD700','#00FF60','#00AAFF','#FF69B4','#FF6600'];
-    for (let i = 0; i < 20; i++) {
+    // Golden star floats up to top of tree
+    setTimeout(() => {
+      const star = document.createElement('div');
+      star.style.cssText = `position:fixed;pointer-events:none;z-index:616;font-size:42px;
+        left:${cx}px;top:${cy}px;transform:translate(-50%,-50%);
+        filter:drop-shadow(0 0 20px gold);
+        animation:greetPop 0.5s cubic-bezier(0.34,1.56,0.64,1),giftFade 0.5s ease 4s forwards`;
+      star.textContent = '⭐';
+      document.body.appendChild(star);
+      setTimeout(() => star.remove(), 4700);
+    }, 500);
+
+    // "С НОВЫМ ГОДОМ!" label
+    setTimeout(() => {
+      const label = document.createElement('div');
+      label.className = 'greet-bubble';
+      label.style.left = cx + 'px';
+      label.style.top  = (cy - 130) + 'px';
+      label.style.fontSize = '24px';
+      label.style.background = 'linear-gradient(135deg,#2e7d32,#66bb6a)';
+      label.textContent = '🎄 С Новым Годом!';
+      document.body.appendChild(label);
+      setTimeout(() => label.remove(), 3500);
+    }, 400);
+
+    // Many blinking lights in a tree shape
+    const colors = ['#FF0000','#FFD700','#00FF60','#00AAFF','#FF69B4','#FF6600','#ffffff'];
+    for (let i = 0; i < 35; i++) {
       setTimeout(() => {
         const light = document.createElement('div');
         light.className = 'xmas-light';
-        const angle = Math.random() * Math.PI * 2;
-        const dist  = 20 + Math.random() * 65;
-        light.style.left = (cx + Math.cos(angle) * dist) + 'px';
-        light.style.top  = (cy - 30 + Math.sin(angle) * dist * 0.7) + 'px';
-        light.style.background = colors[Math.floor(Math.random() * colors.length)];
-        light.style.boxShadow = `0 0 8px ${colors[Math.floor(Math.random() * colors.length)]}`;
-        light.style.animationDelay = (Math.random() * 0.4) + 's';
+        // Place lights in a triangle (tree shape)
+        const row    = Math.floor(Math.random() * 5);
+        const spread = (row + 1) * 18;
+        const angle  = (Math.random() - 0.5) * Math.PI;
+        const dist   = Math.random() * spread;
+        light.style.left   = (cx + Math.cos(angle) * dist) + 'px';
+        light.style.top    = (cy - 10 + row * 20 + Math.random() * 10) + 'px';
+        light.style.width  = (8 + Math.random() * 6) + 'px';
+        light.style.height = light.style.width;
+        const col = colors[Math.floor(Math.random() * colors.length)];
+        light.style.background = col;
+        light.style.boxShadow  = `0 0 10px ${col}, 0 0 20px ${col}`;
+        light.style.animationDelay = (Math.random() * 0.5) + 's';
         document.body.appendChild(light);
-        setTimeout(() => light.remove(), 3800);
-      }, i * 80);
+        setTimeout(() => light.remove(), 4400);
+      }, i * 60);
+    }
+
+    // Ornament emojis appearing on tree
+    const ornaments = ['🔴','🔵','🟡','🟢','🟠','💛','❤️'];
+    for (let i = 0; i < 8; i++) {
+      setTimeout(() => {
+        const orn = document.createElement('div');
+        orn.style.cssText = `position:fixed;pointer-events:none;z-index:614;font-size:20px;
+          left:${cx + (Math.random()-0.5)*80}px;top:${cy + 10 + i*15}px;
+          transform:translate(-50%,-50%);
+          animation:charBtnPop 0.4s cubic-bezier(0.34,1.56,0.64,1),giftFade 0.5s ease 3.5s forwards`;
+        orn.textContent = ornaments[i % ornaments.length];
+        document.body.appendChild(orn);
+        setTimeout(() => orn.remove(), 4200);
+      }, 600 + i * 150);
     }
   }
 
