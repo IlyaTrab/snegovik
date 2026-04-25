@@ -37,6 +37,7 @@ export const CHARACTER_CONFIGS = {
     id: 'deer', name: 'Олень', emoji: '🦌',
     url: new URL('../assets/models/deer.glb', import.meta.url).href,
     greetLine: 'Вжуух! Лечу к тебе!',
+    scaleMultiplier: 2.0,
     procedural: true,
     actionMeta: {
       dance: { label: 'Галоп!',   emoji: '🦌', animKey: 'dance', effect: 'gallop'  },

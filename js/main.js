@@ -311,6 +311,9 @@ class App {
       if (id === 'deer') {
         newChar.group.rotation.y = Math.PI / 2;
       }
+      if (config.scaleMultiplier) {
+        newChar.group.scale.multiplyScalar(config.scaleMultiplier);
+      }
 
       // Now swap: remove old, keep new
       if (oldChar) this.scene.remove(oldChar.group);
@@ -374,6 +377,7 @@ class App {
       await char2.load(this.scene, cfg2.url);
 
       if (this._secondCharId === 'deer') char2.group.rotation.y = Math.PI / 2;
+      if (cfg2.scaleMultiplier) char2.group.scale.multiplyScalar(cfg2.scaleMultiplier);
 
       this._secondCharacter = char2;
       this._dualMode = true;
