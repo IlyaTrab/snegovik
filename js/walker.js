@@ -66,6 +66,14 @@ export class Walker {
     return new THREE.Vector3(worldX, worldY, z);
   }
 
+  updateCharacter(group, char) {
+    this._group = group;
+    this._char  = char;
+    this.state  = 'idle';
+    this._speed = 0;
+    this._target = null;
+  }
+
   stopAndIdle() {
     this.state = 'idle';
     this._speed = 0;

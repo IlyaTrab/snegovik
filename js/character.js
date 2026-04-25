@@ -8,6 +8,45 @@ import { Snowman } from './snowman.js?v=20260425e';
 
 export const MODEL_URL = new URL('../assets/models/snowman.glb', import.meta.url).href;
 
+export const CHARACTER_CONFIGS = {
+  snowman: {
+    id: 'snowman', name: 'Снеговик', emoji: '⛄',
+    url: new URL('../assets/models/snowman.glb', import.meta.url).href,
+    greetLine: 'Привет! Я Снеговик!',
+    procedural: false,
+    actionMeta: {
+      dance: { label: 'Танцуй!',  emoji: '💃', animKey: 'dance', effect: 'dance'    },
+      sing:  { label: 'Пой!',     emoji: '🎵', animKey: 'sing',  effect: 'sing'     },
+      wave:  { label: 'Магия!',   emoji: '✨', animKey: 'wave',  effect: 'magic'    },
+      throw: { label: 'Снежок!',  emoji: '☄️', animKey: 'throw', effect: 'throw'    },
+    },
+  },
+  santa: {
+    id: 'santa', name: 'Дед Мороз', emoji: '🎅',
+    url: new URL('../assets/models/santa.glb', import.meta.url).href,
+    greetLine: 'Хо-хо-хо! С Новым Годом!',
+    procedural: false,
+    actionMeta: {
+      dance: { label: 'Танцуй!',  emoji: '💃', animKey: 'dance', effect: 'dance'    },
+      sing:  { label: 'Привет!',  emoji: '🎅', animKey: 'wave',  effect: 'greet'    },
+      wave:  { label: 'Подарок!', emoji: '🎁', animKey: 'wave',  effect: 'gift'     },
+      throw: { label: 'Ёлочка!', emoji: '🎄', animKey: 'dance', effect: 'xmastree' },
+    },
+  },
+  deer: {
+    id: 'deer', name: 'Олень', emoji: '🦌',
+    url: new URL('../assets/models/deer.glb', import.meta.url).href,
+    greetLine: 'Вжуух! Лечу к тебе!',
+    procedural: true,
+    actionMeta: {
+      dance: { label: 'Галоп!',   emoji: '🦌', animKey: 'dance', effect: 'gallop'  },
+      sing:  { label: 'Бубенцы!', emoji: '🔔', animKey: 'idle',  effect: 'bells'   },
+      wave:  { label: 'Сияние!',  emoji: '⭐', animKey: 'idle',  effect: 'shine'   },
+      throw: { label: 'Прыжок!',  emoji: '❄️', animKey: 'idle',  effect: 'deerJump'},
+    },
+  },
+};
+
 const TARGET_HEIGHT = 0.68;
 const GENERIC_KEYS = ['idle', 'walk', 'run', 'dance', 'wave', 'sing', 'throw', 'happy', 'surprised'];
 const ACTION_META = {
@@ -156,6 +195,10 @@ class ProceduralCharacterAdapter {
   playAction(action, returnTo = 'idle') {
     return this.playOnce(action, returnTo);
   }
+
+  playProceduralAction(_type, _durationMs = 2200) {
+    // no-op for procedural fallback adapter
+  }
 }
 
 class Spring {
@@ -209,6 +252,12 @@ export class Character {
 
     this._clock = 0;
     this._footPh = 0;
+    this._procAnim = null;
+  }
+
+  playProceduralAction(type, durationMs = 2200) {
+    this._procAnim = { type, elapsed: 0, duration: durationMs / 1000 };
+    this.group.scale.setScalar(1);
   }
 
   async load(scene, url = MODEL_URL) {
@@ -498,16 +547,47 @@ export class Character {
     const leanTarget = isWalking ? 0.14 * Math.min(1, moveSpeed) : 0;
     this._sp.lean.x += (leanTarget - lean) * dt * 5;
 
+    let posY, rotX = lean * 0.18 + wx, rotZ = wz, sc = 1;
+
     if (isWalking) {
       this._footPh += dt * 7 * Math.min(1, moveSpeed);
       const footBounce = Math.abs(Math.sin(this._footPh)) * 0.02 * Math.min(1, moveSpeed);
-      this.group.position.y = this.baseY + footBounce;
+      posY = this.baseY + footBounce;
     } else {
-      this.group.position.y = this.baseY + bounceY * 0.08 + Math.sin(t * 1.08) * 0.012;
+      posY = this.baseY + bounceY * 0.08 + Math.sin(t * 1.08) * 0.012;
     }
 
-    this.group.rotation.x = lean * 0.18 + wx;
-    this.group.rotation.z = wz;
+    if (this._procAnim) {
+      const pa = this._procAnim;
+      pa.elapsed += dt;
+      const pt = pa.elapsed;
+      const pd = pa.duration;
+      const env = Math.sin(Math.min(pt / pd, 1) * Math.PI);
+      switch (pa.type) {
+        case 'gallop':
+          posY += Math.abs(Math.sin(pt * 12)) * 0.15 * env;
+          rotX += 0.18 * env;
+          rotZ += Math.sin(pt * 11) * 0.04 * env;
+          break;
+        case 'bells':
+          rotZ += Math.sin(pt * 22) * 0.18 * env;
+          posY += Math.abs(Math.sin(pt * 22)) * 0.03 * env;
+          break;
+        case 'shine':
+          sc = 1 + Math.sin(pt * 9) * 0.07 * env;
+          break;
+        case 'deerJump':
+          posY += Math.sin(Math.min(pt / pd, 1) * Math.PI) * 0.45;
+          rotX += Math.sin((pt / pd) * Math.PI * 2) * 0.2;
+          break;
+      }
+      if (pt >= pd) this._procAnim = null;
+    }
+
+    this.group.position.y = posY;
+    this.group.rotation.x = rotX;
+    this.group.rotation.z = rotZ;
+    this.group.scale.setScalar(sc);
   }
 
   getMeshes() {
