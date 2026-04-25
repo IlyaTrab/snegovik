@@ -170,12 +170,14 @@ export class UIManager {
 
   // ── Action visual effects ───────────────────────────────────
 
+  // ── Снежок — много снежков, жирные залепы ──────────────────
   throwSnowball(fromX, fromY) {
-    // 3 snowballs flying to different screen zones
     const targets = [
-      { x: window.innerWidth * 0.5,  y: window.innerHeight * 0.3 },
-      { x: window.innerWidth * 0.2,  y: window.innerHeight * 0.45 },
-      { x: window.innerWidth * 0.78, y: window.innerHeight * 0.38 },
+      { x: window.innerWidth * 0.50, y: window.innerHeight * 0.28 },
+      { x: window.innerWidth * 0.18, y: window.innerHeight * 0.42 },
+      { x: window.innerWidth * 0.82, y: window.innerHeight * 0.35 },
+      { x: window.innerWidth * 0.35, y: window.innerHeight * 0.55 },
+      { x: window.innerWidth * 0.68, y: window.innerHeight * 0.20 },
     ];
     targets.forEach((to, idx) => {
       setTimeout(() => {
@@ -186,127 +188,194 @@ export class UIManager {
         ball.style.setProperty('--tx', (to.x - fromX) + 'px');
         ball.style.setProperty('--ty', (to.y - fromY) + 'px');
         document.body.appendChild(ball);
-
-        setTimeout(() => {
-          ball.remove();
-          this._glassSplat(to.x, to.y);
-        }, 520);
-      }, idx * 180);
+        setTimeout(() => { ball.remove(); this._glassSplat(to.x, to.y); }, 500);
+      }, idx * 160);
     });
   }
 
   _glassSplat(cx, cy) {
-    // Main splat blob
+    // Big opaque main blob
     const splat = document.createElement('div');
     splat.className = 'glass-splat';
     splat.style.left = cx + 'px';
     splat.style.top  = cy + 'px';
     document.body.appendChild(splat);
+    setTimeout(() => splat.remove(), 4000);
 
-    // Small drip drops around impact
-    for (let i = 0; i < 6; i++) {
-      const drop = document.createElement('div');
-      drop.className = 'glass-drip';
-      const angle = Math.random() * Math.PI * 2;
-      const r = 30 + Math.random() * 50;
-      drop.style.left = (cx + Math.cos(angle) * r) + 'px';
-      drop.style.top  = (cy + Math.sin(angle) * r) + 'px';
-      drop.style.width  = (8 + Math.random() * 14) + 'px';
-      drop.style.height = (8 + Math.random() * 14) + 'px';
-      document.body.appendChild(drop);
-      setTimeout(() => drop.remove(), 3200);
+    // Thick opaque chunks scattered around
+    for (let i = 0; i < 10; i++) {
+      const chunk = document.createElement('div');
+      chunk.className = 'glass-chunk';
+      const angle = (i / 10) * Math.PI * 2 + Math.random() * 0.5;
+      const r     = 35 + Math.random() * 70;
+      chunk.style.left   = (cx + Math.cos(angle) * r) + 'px';
+      chunk.style.top    = (cy + Math.sin(angle) * r) + 'px';
+      const sz = 14 + Math.random() * 22;
+      chunk.style.width  = sz + 'px';
+      chunk.style.height = sz * (0.7 + Math.random() * 0.6) + 'px';
+      chunk.style.borderRadius = (30 + Math.random() * 50) + '%';
+      document.body.appendChild(chunk);
+      setTimeout(() => chunk.remove(), 3800);
     }
 
-    setTimeout(() => splat.remove(), 3500);
+    // Drip trails downward
+    for (let i = 0; i < 3; i++) {
+      setTimeout(() => {
+        const drip = document.createElement('div');
+        drip.className = 'glass-drip-trail';
+        drip.style.left = (cx + (Math.random() - 0.5) * 80) + 'px';
+        drip.style.top  = (cy + 20) + 'px';
+        document.body.appendChild(drip);
+        setTimeout(() => drip.remove(), 2500);
+      }, i * 200);
+    }
   }
 
-  magicSnowfall() {
-    // Dense blizzard for 4 seconds — large fast flakes at angles
-    const end = Date.now() + 4000;
-    const flake = () => {
-      if (Date.now() > end) return;
-      const el = document.createElement('div');
-      el.className = 'blizzard-flake';
-      el.textContent = ['❄', '❅', '❆'][Math.floor(Math.random() * 3)];
-      el.style.left = (Math.random() * 110 - 5) + 'vw';
-      const size = 18 + Math.random() * 28;
-      el.style.fontSize = size + 'px';
-      const dur = 1.2 + Math.random() * 1.2;
-      el.style.setProperty('--angle', (Math.random() * 40 - 20) + 'deg');
-      el.style.animationDuration = dur + 's';
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), dur * 1000 + 200);
-      setTimeout(flake, 40 + Math.random() * 40);
-    };
-    flake();
+  // ── Магия — волшебная палочка + мега метель ─────────────────
+  magicSnowfall(cx, cy) {
+    // Magic wand appears at snowman
+    const wand = document.createElement('div');
+    wand.className = 'magic-wand-fx';
+    wand.textContent = '🪄';
+    wand.style.left = cx + 'px';
+    wand.style.top  = (cy - 40) + 'px';
+    document.body.appendChild(wand);
+    setTimeout(() => wand.remove(), 2000);
+
+    // Magic sparkle burst from wand
+    const sparkEmojis = ['✨', '⭐', '💫', '🌟', '💥'];
+    for (let i = 0; i < 10; i++) {
+      setTimeout(() => {
+        const sp = document.createElement('div');
+        sp.className = 'magic-spark';
+        sp.textContent = sparkEmojis[Math.floor(Math.random() * sparkEmojis.length)];
+        const angle = Math.random() * Math.PI * 2;
+        const dist  = 50 + Math.random() * 80;
+        sp.style.left = cx + 'px';
+        sp.style.top  = (cy - 40) + 'px';
+        sp.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+        sp.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+        document.body.appendChild(sp);
+        setTimeout(() => sp.remove(), 900);
+      }, 300 + i * 60);
+    }
+
+    // SUPER blizzard — starts after wand wave
+    setTimeout(() => {
+      const end = Date.now() + 5000;
+      const flake = () => {
+        if (Date.now() > end) return;
+        const el = document.createElement('div');
+        el.className = 'blizzard-flake';
+        el.textContent = ['❄', '❅', '❆', '❄', '❅'][Math.floor(Math.random() * 5)];
+        el.style.left = (Math.random() * 115 - 7) + 'vw';
+        const size = 22 + Math.random() * 36;
+        el.style.fontSize = size + 'px';
+        const dur = 0.9 + Math.random() * 1.0;
+        el.style.setProperty('--angle', (Math.random() * 50 - 25) + 'deg');
+        el.style.animationDuration = dur + 's';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), dur * 1000 + 200);
+        setTimeout(flake, 25 + Math.random() * 30);
+      };
+      flake();
+    }, 700);
   }
 
+  // ── Танец — диско-шар + цветные лучи ───────────────────────
   danceSparkles(cx, cy) {
-    // Screen flash + burst of disco particles
-    const flash = document.createElement('div');
-    flash.className = 'disco-flash';
-    document.body.appendChild(flash);
-    setTimeout(() => flash.remove(), 600);
+    // Disco ball drops from top
+    const container = document.createElement('div');
+    container.className = 'disco-ball-container';
+    container.innerHTML = `<div class="disco-string"></div><div class="disco-ball">🪩</div>`;
+    document.body.appendChild(container);
+    setTimeout(() => {
+      container.classList.add('disco-exit');
+      setTimeout(() => container.remove(), 600);
+    }, 4000);
 
-    const emojis = ['✨', '⭐', '💫', '🌟', '🎉', '🎊', '🌈', '💥', '🔆'];
-    for (let i = 0; i < 20; i++) {
+    // Pulsing colored light beams from ball to screen
+    const colors = ['#ff0055','#ff8800','#ffee00','#00ff88','#00aaff','#aa00ff','#ff0088'];
+    let beam = 0;
+    const beamIv = setInterval(() => {
+      const b = document.createElement('div');
+      b.className = 'disco-beam';
+      b.style.background = colors[beam % colors.length];
+      b.style.setProperty('--bangle', (Math.random() * 360) + 'deg');
+      document.body.appendChild(b);
+      setTimeout(() => b.remove(), 500);
+      beam++;
+    }, 280);
+    setTimeout(() => clearInterval(beamIv), 4200);
+
+    // Flash screen color on beat
+    const flashColors = ['rgba(255,0,85,0.18)', 'rgba(0,200,255,0.18)', 'rgba(255,200,0,0.18)', 'rgba(150,0,255,0.18)'];
+    let fc = 0;
+    const flashIv = setInterval(() => {
+      const fl = document.createElement('div');
+      fl.className = 'disco-color-flash';
+      fl.style.background = flashColors[fc % flashColors.length];
+      fc++;
+      document.body.appendChild(fl);
+      setTimeout(() => fl.remove(), 250);
+    }, 380);
+    setTimeout(() => clearInterval(flashIv), 4200);
+
+    // Particle burst
+    const emojis = ['✨', '💫', '🌟', '⭐', '🎊'];
+    for (let i = 0; i < 16; i++) {
       setTimeout(() => {
         const el = document.createElement('div');
         el.className = 'dance-sparkle';
         el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-        const angle = (i / 20) * Math.PI * 2 + Math.random() * 0.3;
-        const dist  = 70 + Math.random() * 120;
+        const angle = (i / 16) * Math.PI * 2;
+        const dist  = 80 + Math.random() * 110;
         el.style.left = cx + 'px';
         el.style.top  = cy + 'px';
         el.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
         el.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
-        el.style.fontSize = (18 + Math.random() * 14) + 'px';
+        el.style.fontSize = (20 + Math.random() * 12) + 'px';
         document.body.appendChild(el);
-        setTimeout(() => el.remove(), 1100);
-      }, i * 40);
+        setTimeout(() => el.remove(), 1200);
+      }, i * 50);
     }
   }
 
+  // ── Пой — пианино + ноты ────────────────────────────────────
   singNotes(cx, cy) {
-    // Waves of big musical notes floating up
+    // Piano at snowman feet
+    const piano = document.createElement('div');
+    piano.className = 'piano-scene';
+    piano.style.left = cx + 'px';
+    piano.style.top  = (cy + 60) + 'px';
+    piano.innerHTML = '<span class="piano-emoji">🎹</span>';
+    document.body.appendChild(piano);
+    setTimeout(() => piano.remove(), 5000);
+
+    // Speech bubble above snowman with notes
+    const bubble = document.createElement('div');
+    bubble.className = 'sing-bubble';
+    bubble.textContent = '♫ ла-ла-лааа ♫';
+    bubble.style.left = cx + 'px';
+    bubble.style.top  = (cy - 80) + 'px';
+    document.body.appendChild(bubble);
+    setTimeout(() => bubble.remove(), 4500);
+
+    // Waves of notes from piano position
     const notes = ['♩', '♪', '♫', '♬', '🎵', '🎶'];
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 18; i++) {
       setTimeout(() => {
         const el = document.createElement('div');
         el.className = 'sing-note';
         el.textContent = notes[Math.floor(Math.random() * notes.length)];
-        const offsetX = (Math.random() - 0.5) * 160;
+        const offsetX = (Math.random() - 0.5) * 180;
         el.style.left = cx + 'px';
-        el.style.top  = cy + 'px';
+        el.style.top  = (cy + 40) + 'px';
         el.style.setProperty('--tx', offsetX + 'px');
-        el.style.fontSize = (22 + Math.random() * 18) + 'px';
+        el.style.fontSize = (24 + Math.random() * 20) + 'px';
         document.body.appendChild(el);
-        setTimeout(() => el.remove(), 2000);
-      }, i * 130);
+        setTimeout(() => el.remove(), 2200);
+      }, i * 150);
     }
-
-    // Simple melody via Web Audio API
-    this._playMelody();
-  }
-
-  _playMelody() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 659.25, 783.99, 1046.5];
-      notes.forEach((freq, i) => {
-        const osc  = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = 'sine';
-        osc.frequency.value = freq;
-        const t = ctx.currentTime + i * 0.22;
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(0.25, t + 0.04);
-        gain.gain.linearRampToValueAtTime(0, t + 0.2);
-        osc.start(t);
-        osc.stop(t + 0.22);
-      });
-    } catch (_) { /* audio not available */ }
   }
 }
