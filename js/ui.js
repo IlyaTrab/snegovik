@@ -169,72 +169,144 @@ export class UIManager {
   }
 
   // ── Action visual effects ───────────────────────────────────
+
   throwSnowball(fromX, fromY) {
-    const toX = window.innerWidth  * (0.25 + Math.random() * 0.5);
-    const toY = window.innerHeight * (0.20 + Math.random() * 0.45);
+    // 3 snowballs flying to different screen zones
+    const targets = [
+      { x: window.innerWidth * 0.5,  y: window.innerHeight * 0.3 },
+      { x: window.innerWidth * 0.2,  y: window.innerHeight * 0.45 },
+      { x: window.innerWidth * 0.78, y: window.innerHeight * 0.38 },
+    ];
+    targets.forEach((to, idx) => {
+      setTimeout(() => {
+        const ball = document.createElement('div');
+        ball.className = 'snowball-fx';
+        ball.style.left = fromX + 'px';
+        ball.style.top  = fromY + 'px';
+        ball.style.setProperty('--tx', (to.x - fromX) + 'px');
+        ball.style.setProperty('--ty', (to.y - fromY) + 'px');
+        document.body.appendChild(ball);
 
-    const ball = document.createElement('div');
-    ball.className = 'snowball-fx';
-    ball.style.left = fromX + 'px';
-    ball.style.top  = fromY + 'px';
-    ball.style.setProperty('--tx', (toX - fromX) + 'px');
-    ball.style.setProperty('--ty', (toY - fromY) + 'px');
-    document.body.appendChild(ball);
+        setTimeout(() => {
+          ball.remove();
+          this._glassSplat(to.x, to.y);
+        }, 520);
+      }, idx * 180);
+    });
+  }
 
-    setTimeout(() => {
-      ball.remove();
-      const splat = document.createElement('div');
-      splat.className = 'snowball-splat';
-      splat.textContent = '❄';
-      splat.style.left = toX + 'px';
-      splat.style.top  = toY + 'px';
-      document.body.appendChild(splat);
-      setTimeout(() => splat.remove(), 2000);
-    }, 560);
+  _glassSplat(cx, cy) {
+    // Main splat blob
+    const splat = document.createElement('div');
+    splat.className = 'glass-splat';
+    splat.style.left = cx + 'px';
+    splat.style.top  = cy + 'px';
+    document.body.appendChild(splat);
+
+    // Small drip drops around impact
+    for (let i = 0; i < 6; i++) {
+      const drop = document.createElement('div');
+      drop.className = 'glass-drip';
+      const angle = Math.random() * Math.PI * 2;
+      const r = 30 + Math.random() * 50;
+      drop.style.left = (cx + Math.cos(angle) * r) + 'px';
+      drop.style.top  = (cy + Math.sin(angle) * r) + 'px';
+      drop.style.width  = (8 + Math.random() * 14) + 'px';
+      drop.style.height = (8 + Math.random() * 14) + 'px';
+      document.body.appendChild(drop);
+      setTimeout(() => drop.remove(), 3200);
+    }
+
+    setTimeout(() => splat.remove(), 3500);
   }
 
   magicSnowfall() {
-    let count = 0;
-    const max = 45;
-    const iv = setInterval(() => {
-      this.spawnSnowflake();
-      if (++count >= max) clearInterval(iv);
-    }, 70);
+    // Dense blizzard for 4 seconds — large fast flakes at angles
+    const end = Date.now() + 4000;
+    const flake = () => {
+      if (Date.now() > end) return;
+      const el = document.createElement('div');
+      el.className = 'blizzard-flake';
+      el.textContent = ['❄', '❅', '❆'][Math.floor(Math.random() * 3)];
+      el.style.left = (Math.random() * 110 - 5) + 'vw';
+      const size = 18 + Math.random() * 28;
+      el.style.fontSize = size + 'px';
+      const dur = 1.2 + Math.random() * 1.2;
+      el.style.setProperty('--angle', (Math.random() * 40 - 20) + 'deg');
+      el.style.animationDuration = dur + 's';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), dur * 1000 + 200);
+      setTimeout(flake, 40 + Math.random() * 40);
+    };
+    flake();
   }
 
   danceSparkles(cx, cy) {
-    const emojis = ['✨', '⭐', '💫', '🌟', '🎉', '🎊', '🌈'];
-    for (let i = 0; i < 14; i++) {
+    // Screen flash + burst of disco particles
+    const flash = document.createElement('div');
+    flash.className = 'disco-flash';
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 600);
+
+    const emojis = ['✨', '⭐', '💫', '🌟', '🎉', '🎊', '🌈', '💥', '🔆'];
+    for (let i = 0; i < 20; i++) {
       setTimeout(() => {
         const el = document.createElement('div');
         el.className = 'dance-sparkle';
         el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-        const angle = (i / 14) * Math.PI * 2 + Math.random() * 0.4;
-        const dist  = 55 + Math.random() * 90;
+        const angle = (i / 20) * Math.PI * 2 + Math.random() * 0.3;
+        const dist  = 70 + Math.random() * 120;
         el.style.left = cx + 'px';
         el.style.top  = cy + 'px';
         el.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
         el.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+        el.style.fontSize = (18 + Math.random() * 14) + 'px';
         document.body.appendChild(el);
-        setTimeout(() => el.remove(), 1000);
-      }, i * 55);
+        setTimeout(() => el.remove(), 1100);
+      }, i * 40);
     }
   }
 
   singNotes(cx, cy) {
+    // Waves of big musical notes floating up
     const notes = ['♩', '♪', '♫', '♬', '🎵', '🎶'];
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 14; i++) {
       setTimeout(() => {
         const el = document.createElement('div');
         el.className = 'sing-note';
         el.textContent = notes[Math.floor(Math.random() * notes.length)];
-        const offsetX = (Math.random() - 0.5) * 110;
+        const offsetX = (Math.random() - 0.5) * 160;
         el.style.left = cx + 'px';
         el.style.top  = cy + 'px';
         el.style.setProperty('--tx', offsetX + 'px');
+        el.style.fontSize = (22 + Math.random() * 18) + 'px';
         document.body.appendChild(el);
-        setTimeout(() => el.remove(), 1500);
-      }, i * 110);
+        setTimeout(() => el.remove(), 2000);
+      }, i * 130);
     }
+
+    // Simple melody via Web Audio API
+    this._playMelody();
+  }
+
+  _playMelody() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 659.25, 783.99, 1046.5];
+      notes.forEach((freq, i) => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        const t = ctx.currentTime + i * 0.22;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.25, t + 0.04);
+        gain.gain.linearRampToValueAtTime(0, t + 0.2);
+        osc.start(t);
+        osc.stop(t + 0.22);
+      });
+    } catch (_) { /* audio not available */ }
   }
 }
