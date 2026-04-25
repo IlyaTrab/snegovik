@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 
-import { StateMachine, GameState } from './state.js?v=20260425c';
-import { CameraManager }           from './camera.js?v=20260425c';
-import { Character, ProceduralCharacterAdapter } from './character.js?v=20260425c';
-import { Walker }                  from './walker.js?v=20260425c';
-import { SnowParticles }           from './particles.js?v=20260425c';
-import { Star }                    from './star.js?v=20260425c';
-import { QuestManager }            from './quests.js?v=20260425c';
-import { UIManager }               from './ui.js?v=20260425c';
-import { AudioManager }            from './audio.js?v=20260425c';
+import { StateMachine, GameState } from './state.js?v=20260425d';
+import { CameraManager }           from './camera.js?v=20260425d';
+import { Character, ProceduralCharacterAdapter } from './character.js?v=20260425d';
+import { Walker }                  from './walker.js?v=20260425d';
+import { SnowParticles }           from './particles.js?v=20260425d';
+import { Star }                    from './star.js?v=20260425d';
+import { QuestManager }            from './quests.js?v=20260425d';
+import { UIManager }               from './ui.js?v=20260425d';
+import { AudioManager }            from './audio.js?v=20260425d';
 
 // Double-tap threshold (ms)
 const DBL_TAP_MS = 380;

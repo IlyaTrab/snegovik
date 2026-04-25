@@ -233,14 +233,14 @@ export class UIManager {
 
   // ── Магия — волшебная палочка + мега метель ─────────────────
   magicSnowfall(cx, cy) {
-    // Magic wand appears at snowman
+    // Magic wand — large, at snowman hand level
     const wand = document.createElement('div');
     wand.className = 'magic-wand-fx';
     wand.textContent = '🪄';
     wand.style.left = cx + 'px';
-    wand.style.top  = (cy - 40) + 'px';
+    wand.style.top  = (cy - 20) + 'px';
     document.body.appendChild(wand);
-    setTimeout(() => wand.remove(), 2000);
+    setTimeout(() => wand.remove(), 2200);
 
     // Magic sparkle burst from wand
     const sparkEmojis = ['✨', '⭐', '💫', '🌟', '💥'];
@@ -341,41 +341,71 @@ export class UIManager {
     }
   }
 
-  // ── Пой — пианино + ноты ────────────────────────────────────
+  // ── Пой — CSS-пианино + нажатия клавиш + ноты ──────────────
   singNotes(cx, cy) {
-    // Piano at snowman feet
-    const piano = document.createElement('div');
-    piano.className = 'piano-scene';
+    // Build CSS piano
+    const piano = this._buildPiano();
     piano.style.left = cx + 'px';
-    piano.style.top  = (cy + 60) + 'px';
-    piano.innerHTML = '<span class="piano-emoji">🎹</span>';
+    piano.style.top  = (cy + 70) + 'px';
     document.body.appendChild(piano);
-    setTimeout(() => piano.remove(), 5000);
 
-    // Speech bubble above snowman with notes
+    // Animate random key presses in rhythm
+    const keys = piano.querySelectorAll('.pwk');
+    for (let i = 0; i < 22; i++) {
+      setTimeout(() => {
+        const k = keys[Math.floor(Math.random() * keys.length)];
+        k.classList.add('pressed');
+        setTimeout(() => k.classList.remove('pressed'), 130);
+      }, i * 160 + 100);
+    }
+    setTimeout(() => piano.remove(), 5200);
+
+    // Speech bubble
     const bubble = document.createElement('div');
     bubble.className = 'sing-bubble';
     bubble.textContent = '♫ ла-ла-лааа ♫';
     bubble.style.left = cx + 'px';
-    bubble.style.top  = (cy - 80) + 'px';
+    bubble.style.top  = (cy - 90) + 'px';
     document.body.appendChild(bubble);
-    setTimeout(() => bubble.remove(), 4500);
+    setTimeout(() => bubble.remove(), 4800);
 
-    // Waves of notes from piano position
+    // Waves of notes rising from piano
     const notes = ['♩', '♪', '♫', '♬', '🎵', '🎶'];
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 20; i++) {
       setTimeout(() => {
         const el = document.createElement('div');
         el.className = 'sing-note';
         el.textContent = notes[Math.floor(Math.random() * notes.length)];
-        const offsetX = (Math.random() - 0.5) * 180;
+        const offsetX = (Math.random() - 0.5) * 200;
         el.style.left = cx + 'px';
-        el.style.top  = (cy + 40) + 'px';
+        el.style.top  = (cy + 30) + 'px';
         el.style.setProperty('--tx', offsetX + 'px');
-        el.style.fontSize = (24 + Math.random() * 20) + 'px';
+        el.style.fontSize = (24 + Math.random() * 22) + 'px';
         document.body.appendChild(el);
-        setTimeout(() => el.remove(), 2200);
-      }, i * 150);
+        setTimeout(() => el.remove(), 2400);
+      }, i * 155);
     }
+  }
+
+  _buildPiano() {
+    const scene = document.createElement('div');
+    scene.className = 'piano-scene';
+    scene.innerHTML = `
+      <div class="piano-body">
+        <div class="piano-lid"><span class="piano-logo">🎵 Grand</span></div>
+        <div class="piano-keys-wrap">
+          <div class="piano-white-keys">
+            <div class="pwk"></div><div class="pwk"></div><div class="pwk"></div>
+            <div class="pwk"></div><div class="pwk"></div><div class="pwk"></div>
+            <div class="pwk"></div>
+          </div>
+          <div class="pbk" style="left:10.5%"></div>
+          <div class="pbk" style="left:24.5%"></div>
+          <div class="pbk" style="left:52.5%"></div>
+          <div class="pbk" style="left:66.5%"></div>
+          <div class="pbk" style="left:80.5%"></div>
+        </div>
+      </div>`;
+    return scene;
   }
 }
